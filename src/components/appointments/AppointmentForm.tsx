@@ -36,8 +36,8 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
   const [trainers] = useState<Trainer[]>(listTrainers())
   
   // Business hours and time utilities
-  const BUSINESS_START_MINUTES = 8 * 60 // 08:00
-  const BUSINESS_END_MINUTES = 18 * 60 // 18:00
+  const BUSINESS_START_MINUTES = 10 * 60 // 10:00
+  const BUSINESS_END_MINUTES = 19 * 60 // 19:00
   const INCREMENT = 15
 
   const minutesToHHMM = (mins: number): string => {
@@ -47,7 +47,7 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
   }
 
   const generateStartTimeOptions = (): string[] => {
-    const latestStart = BUSINESS_END_MINUTES - 60 // ensure at least 1h duration
+    const latestStart = BUSINESS_END_MINUTES - 30 // ensure at least 30m duration
     const options: string[] = []
     for (let t = BUSINESS_START_MINUTES; t <= latestStart; t += INCREMENT) {
       options.push(minutesToHHMM(t))
@@ -59,7 +59,7 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
     if (!startTime) return []
     const [sh, sm] = startTime.split(':').map(Number)
     const startMins = sh * 60 + sm
-    const minEnd = startMins + 60
+    const minEnd = startMins + 30
     const maxEnd = Math.min(startMins + 120, BUSINESS_END_MINUTES)
     const options: string[] = []
     for (let t = minEnd; t <= maxEnd; t += INCREMENT) {

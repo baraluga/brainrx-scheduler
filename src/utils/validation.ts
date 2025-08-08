@@ -37,9 +37,9 @@ export function validateTimeSlot(startTime: string, endTime: string): { ok: true
     return { ok: false, message: 'End time must be after start time' }
   }
   
-  // Check duration bounds (60-120 minutes)
-  if (duration < 60) {
-    return { ok: false, message: 'Duration must be at least 1 hour' }
+  // Check duration bounds (30-120 minutes)
+  if (duration < 30) {
+    return { ok: false, message: 'Duration must be at least 30 minutes' }
   }
   
   if (duration > 120) {
