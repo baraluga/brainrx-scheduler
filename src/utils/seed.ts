@@ -159,6 +159,89 @@ const seedAppointments = (studentIds: string[], trainerIds: string[]): void => {
   appointments.forEach(appointment => createAppointment(appointment))
 }
 
+// Seed a dense set of appointments for August 9, 2025 to visualize the daily grid
+const seedAug9_2025IfMissing = (): void => {
+  const target = new Date(2025, 7, 9) // Aug is month index 7
+  const targetKey = target.toDateString()
+  const existingOnTarget = listAppointments().some(a => new Date(a.date).toDateString() === targetKey)
+  if (existingOnTarget) return
+
+  const students = listStudents()
+  const trainers = listTrainers()
+  if (students.length === 0 || trainers.length === 0) return
+
+  // Helper generators
+  const minutesToHHMM = (mins: number): string => {
+    const h = Math.floor(mins / 60)
+    const m = mins % 60
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  }
+
+  const BUSINESS_START = 10 * 60
+  const BUSINESS_END = 19 * 60
+  const INCREMENT = 15
+
+  const randomFrom = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]
+  const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n))
+
+  const createBlock = (startMins: number, durationMins: number, type: Appointment['appointmentType']): Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'> => {
+    const s = minutesToHHMM(startMins)
+    const e = minutesToHHMM(startMins + durationMins)
+    const student = randomFrom(students)
+    // For GT, ensure trainer can do GT if available; else fall back to any
+    const eligibleTrainers = type === 'gt-assessment' ? trainers.filter(t => t.canDoGtAssessments) : trainers
+    const trainer = (eligibleTrainers.length ? randomFrom(eligibleTrainers) : randomFrom(trainers))
+    return {
+      appointmentType: type,
+      studentId: student.id,
+      trainerId: trainer.id,
+      date: new Date(2025, 7, 9, Math.floor(startMins / 60), startMins % 60).toISOString(),
+      startTime: s,
+      endTime: e,
+      status: 'scheduled',
+      notes: ''
+    }
+  }
+
+  const appts: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'>[] = []
+
+  // Generate a rich set of Training appointments across the day
+  for (let lane = 0; lane < 10; lane++) {
+    let cursor = BUSINESS_START + lane * 6 // stagger lanes a bit
+    while (cursor < BUSINESS_END - 30) {
+      const durChoices = [30, 45, 60, 75, 90, 105, 120]
+      const duration = durChoices[Math.floor(Math.random() * durChoices.length)]
+      const roundedDuration = duration - (duration % INCREMENT)
+      const safeDuration = clamp(roundedDuration, 30, 120)
+      if (cursor + safeDuration > BUSINESS_END) break
+      appts.push(createBlock(cursor, safeDuration, 'training'))
+      // gap between 15-45 minutes
+      const gapChoices = [15, 15, 30, 30, 45]
+      const gap = gapChoices[Math.floor(Math.random() * gapChoices.length)]
+      cursor += safeDuration + gap
+    }
+  }
+
+  // Generate GT Assessment appointments (fewer lanes)
+  for (let lane = 0; lane < 4; lane++) {
+    let cursor = BUSINESS_START + lane * 10
+    while (cursor < BUSINESS_END - 30) {
+      const durChoices = [30, 45, 60, 75, 90]
+      const duration = durChoices[Math.floor(Math.random() * durChoices.length)]
+      const roundedDuration = duration - (duration % INCREMENT)
+      const safeDuration = clamp(roundedDuration, 30, 120)
+      if (cursor + safeDuration > BUSINESS_END) break
+      appts.push(createBlock(cursor, safeDuration, 'gt-assessment'))
+      const gapChoices = [15, 30, 30, 45]
+      const gap = gapChoices[Math.floor(Math.random() * gapChoices.length)]
+      cursor += safeDuration + gap
+    }
+  }
+
+  // Persist
+  appts.forEach(a => createAppointment(a))
+}
+
 export function seedIfEmpty(): void {
   // Check if data already exists
   const existingStudents = listStudents()
@@ -179,4 +262,7 @@ export function seedIfEmpty(): void {
     
     console.log('Seed data created successfully')
   }
+
+  // Always attempt to seed the dense demo day for Aug 9, 2025 if it's not present
+  seedAug9_2025IfMissing()
 }
