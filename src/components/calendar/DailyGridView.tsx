@@ -1,0 +1,238 @@
+import { useMemo } from 'react'
+import { Appointment, AppointmentType, Student, Trainer } from '../../types/index'
+
+type DailyGridConfig = {
+  businessStartMinutes: number // minutes from midnight (e.g., 10:00 → 600)
+  businessEndMinutes: number   // minutes from midnight (e.g., 19:00 → 1140)
+  incrementMinutes: number     // 15
+  slotsPerType: Record<AppointmentType, number>
+}
+
+type DailyGridViewProps = {
+  date: Date
+  appointments: Appointment[]
+  students: Student[]
+  trainers: Trainer[]
+  config: DailyGridConfig
+}
+
+type PositionedAppointment = Appointment & {
+  laneIndex: number
+}
+
+const PASTEL_COLORS = [
+  '#93c5fd', // blue-300
+  '#a5b4fc', // indigo-300
+  '#c4b5fd', // violet-300
+  '#f9a8d4', // pink-300
+  '#fca5a5', // red-300
+  '#fdba74', // orange-300
+  '#fcd34d', // amber-300
+  '#86efac', // green-300
+  '#7dd3fc', // sky-300
+  '#6ee7b7', // emerald-300
+]
+
+function minutesBetween(a: string, b: string): number {
+  const [ah, am] = a.split(':').map(Number)
+  const [bh, bm] = b.split(':').map(Number)
+  return (bh * 60 + bm) - (ah * 60 + am)
+}
+
+function hhmmToMinutes(hhmm: string): number {
+  const [h, m] = hhmm.split(':').map(Number)
+  return h * 60 + m
+}
+
+function getTrainerColor(trainerId: string): string {
+  // Stable color selection by hashing trainerId
+  let hash = 0
+  for (let i = 0; i < trainerId.length; i++) {
+    hash = (hash * 31 + trainerId.charCodeAt(i)) >>> 0
+  }
+  const idx = hash % PASTEL_COLORS.length
+  return PASTEL_COLORS[idx]
+}
+
+function placeInLanes(appointments: Appointment[], slotCount: number): PositionedAppointment[] {
+  // Greedy lane assignment by start time
+  const sorted = [...appointments].sort((a, b) => a.startTime.localeCompare(b.startTime) || a.endTime.localeCompare(b.endTime))
+  const laneEndTimes: number[] = new Array(slotCount).fill(0) // minutes from midnight
+  const positioned: PositionedAppointment[] = []
+
+  for (const appt of sorted) {
+    const startMins = hhmmToMinutes(appt.startTime)
+    const endMins = hhmmToMinutes(appt.endTime)
+    let placed = false
+    for (let lane = 0; lane < slotCount; lane++) {
+      if (startMins >= laneEndTimes[lane]) {
+        laneEndTimes[lane] = endMins
+        positioned.push({ ...appt, laneIndex: lane })
+        placed = true
+        break
+      }
+    }
+    if (!placed) {
+      // Overflow: place in last lane and let it visually overlap; add marker via negative laneIndex is too complex, so keep last lane
+      const last = slotCount - 1
+      positioned.push({ ...appt, laneIndex: last })
+      laneEndTimes[last] = Math.max(laneEndTimes[last], endMins)
+    }
+  }
+
+  return positioned
+}
+
+export default function DailyGridView({ date, appointments, students, trainers, config }: DailyGridViewProps) {
+  const {
+    businessStartMinutes,
+    businessEndMinutes,
+    incrementMinutes,
+    slotsPerType,
+  } = config
+
+  const dateKey = date.toDateString()
+  const dayAppointments = useMemo(() => {
+    return appointments.filter((a) => new Date(a.date).toDateString() === dateKey)
+  }, [appointments, dateKey])
+
+  const minsToLabel = (mins: number): string => {
+    const h = Math.floor(mins / 60)
+    const m = mins % 60
+    const period = h >= 12 ? 'PM' : 'AM'
+    const hh = h % 12 === 0 ? 12 : h % 12
+    return `${hh}:${String(m).padStart(2, '0')} ${period}`
+  }
+
+  const timeSlots = useMemo(() => {
+    const list: number[] = []
+    for (let t = businessStartMinutes; t < businessEndMinutes; t += incrementMinutes) {
+      list.push(t)
+    }
+    return list
+  }, [businessStartMinutes, businessEndMinutes, incrementMinutes])
+
+  const trainingPositioned = useMemo(() => {
+    return placeInLanes(
+      dayAppointments.filter((a) => a.appointmentType === 'training'),
+      slotsPerType['training']
+    )
+  }, [dayAppointments, slotsPerType])
+
+  const gtPositioned = useMemo(() => {
+    return placeInLanes(
+      dayAppointments.filter((a) => a.appointmentType === 'gt-assessment'),
+      slotsPerType['gt-assessment']
+    )
+  }, [dayAppointments, slotsPerType])
+
+  const rowHeight = 28 // px per 15 min
+  const gridHeight = ((businessEndMinutes - businessStartMinutes) / incrementMinutes) * rowHeight
+  const BLOCK_GAP = 4 // px – consistent horizontal and vertical spacing
+
+  const getName = (id: string, list: Array<{ id: string; name: string }>) => list.find((x) => x.id === id)?.name || 'Unknown'
+
+  const nowLineTop = (() => {
+    const today = new Date()
+    if (today.toDateString() !== dateKey) return null
+    const nowMins = today.getHours() * 60 + today.getMinutes()
+    if (nowMins < businessStartMinutes || nowMins > businessEndMinutes) return null
+    return ((nowMins - businessStartMinutes) / incrementMinutes) * rowHeight
+  })()
+
+  const renderAppt = (p: PositionedAppointment) => {
+    const startOffset = (hhmmToMinutes(p.startTime) - businessStartMinutes) / incrementMinutes * rowHeight
+    const duration = minutesBetween(p.startTime, p.endTime)
+    const height = Math.max(6, (duration / incrementMinutes) * rowHeight - BLOCK_GAP)
+    const isTraining = p.appointmentType === 'training'
+    const laneCount = isTraining ? slotsPerType['training'] : slotsPerType['gt-assessment']
+    const laneWidthPercent = 100 / laneCount
+    const leftPercent = p.laneIndex * laneWidthPercent
+    const trainer = trainers.find(t => t.id === p.trainerId)
+    const color = getTrainerColor(p.trainerId)
+    const borderColor = trainer?.canDoGtAssessments ? '#2563eb' : '#6b7280' // blue if GT-capable, gray otherwise
+    const studentName = getName(p.studentId, students)
+    const trainerName = getName(p.trainerId, trainers)
+
+    return (
+      <div
+        key={p.id}
+        className="absolute px-2 py-1 rounded-md overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-default"
+        style={{
+          top: startOffset + BLOCK_GAP / 2,
+          height,
+          left: `calc(${leftPercent}% + ${BLOCK_GAP / 2}px)`,
+          width: `calc(${laneWidthPercent}% - ${BLOCK_GAP}px)`,
+          backgroundColor: color,
+          border: `1px solid ${borderColor}`
+        }}
+        title={`${studentName} — ${trainerName}\n${p.startTime}–${p.endTime} (${p.status})`}
+      >
+        <div className="text-[11px] font-medium text-gray-900 truncate">{studentName}</div>
+        <div className="text-[10px] text-gray-700 truncate">{trainerName}</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-white shadow rounded-lg overflow-hidden">
+      <div className="grid" style={{ gridTemplateColumns: '120px 1fr 1fr' }}>
+        {/* Two-level header */}
+        <div className="border-b border-gray-200" />
+        <div className="border-b border-gray-200 text-center font-semibold py-2">Training</div>
+        <div className="border-b border-gray-200 text-center font-semibold py-2">GT</div>
+
+        {/* Second header row with slot numbers */}
+        <div className="border-b border-gray-200 bg-gray-50 text-xs text-gray-600 py-2 px-3">Time</div>
+        <div className="border-b border-gray-200 bg-gray-50">
+          <div className="grid" style={{ gridTemplateColumns: `repeat(${slotsPerType['training']}, 1fr)` }}>
+            {Array.from({ length: slotsPerType['training'] }).map((_, i) => (
+              <div key={i} className="text-xs text-gray-600 text-center py-2 border-l first:border-l-0 border-gray-200">{i + 1}</div>
+            ))}
+          </div>
+        </div>
+        <div className="border-b border-gray-200 bg-gray-50">
+          <div className="grid" style={{ gridTemplateColumns: `repeat(${slotsPerType['gt-assessment']}, 1fr)` }}>
+            {Array.from({ length: slotsPerType['gt-assessment'] }).map((_, i) => (
+              <div key={i} className="text-xs text-gray-600 text-center py-2 border-l first:border-l-0 border-gray-200">{i + 1}</div>
+            ))}
+          </div>
+        </div>
+
+        {/* Body: time column + two canvases */}
+        <div>
+          <div className="relative" style={{ height: gridHeight }}>
+            {timeSlots.map((mins) => (
+              <div key={mins} className="absolute w-full border-t border-gray-200 text-[11px] text-gray-600 pr-2" style={{ top: ((mins - businessStartMinutes) / incrementMinutes) * rowHeight - 0.5 }}>
+                <div className="-mt-2 text-right pr-2">{minsToLabel(mins)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="relative border-l border-gray-200" style={{ height: gridHeight }}>
+          {/* Background grid lines */}
+          {timeSlots.map((mins) => (
+            <div key={mins} className="absolute left-0 right-0 border-t border-gray-100" style={{ top: ((mins - businessStartMinutes) / incrementMinutes) * rowHeight }} />
+          ))}
+          {/* Appointments */}
+          {trainingPositioned.map(renderAppt)}
+          {/* Now line */}
+          {nowLineTop !== null && (
+            <div className="absolute left-0 right-0 border-t-2 border-red-500" style={{ top: nowLineTop }} />
+          )}
+        </div>
+        <div className="relative border-l border-gray-200" style={{ height: gridHeight }}>
+          {timeSlots.map((mins) => (
+            <div key={mins} className="absolute left-0 right-0 border-t border-gray-100" style={{ top: ((mins - businessStartMinutes) / incrementMinutes) * rowHeight }} />
+          ))}
+          {gtPositioned.map(renderAppt)}
+          {nowLineTop !== null && (
+            <div className="absolute left-0 right-0 border-t-2 border-red-500" style={{ top: nowLineTop }} />
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+

@@ -5,6 +5,7 @@ import { listStudents } from '../services/students'
 import { listTrainers } from '../services/trainers'
 import AppointmentForm from '../components/appointments/AppointmentForm'
 import Modal from '../components/common/Modal'
+import DailyGridView from '../components/calendar/DailyGridView'
 
 function Calendar() {
   const [appointments, setAppointments] = useState<Appointment[]>(listAppointments())
@@ -15,6 +16,8 @@ function Calendar() {
     message: string
     type: 'success' | 'error'
   } | null>(null)
+  const [viewMode, setViewMode] = useState<'list' | 'daily-grid'>('list')
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().slice(0,10))
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type })
@@ -48,6 +51,27 @@ function Calendar() {
   const sortedDates = Object.keys(appointmentsByDate).sort((a, b) => 
     new Date(a).getTime() - new Date(b).getTime()
   )
+
+  const goPrevDay = () => {
+    const d = new Date(selectedDate)
+    d.setDate(d.getDate() - 1)
+    setSelectedDate(d.toISOString().slice(0,10))
+  }
+  const goNextDay = () => {
+    const d = new Date(selectedDate)
+    d.setDate(d.getDate() + 1)
+    setSelectedDate(d.toISOString().slice(0,10))
+  }
+
+  const GRID_CONFIG = {
+    businessStartMinutes: 10 * 60,
+    businessEndMinutes: 19 * 60,
+    incrementMinutes: 15,
+    slotsPerType: {
+      'training': 10,
+      'gt-assessment': 4,
+    } as const
+  }
 
   const handleCreateAppointment = (data: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => {
     try {
@@ -107,20 +131,43 @@ function Calendar() {
             View and manage training session schedules and appointments.
           </p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
-        >
-          <svg className="-ml-1 mr-2 h-5 w-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-            <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-          </svg>
-          Create Appointment
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="hidden sm:flex items-center gap-2 mr-4">
+            <button onClick={goPrevDay} className="px-2 py-1 rounded border border-gray-300 hover:bg-gray-50">◀</button>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="px-2 py-1 border border-gray-300 rounded"
+            />
+            <button onClick={goNextDay} className="px-2 py-1 rounded border border-gray-300 hover:bg-gray-50">▶</button>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">View:</label>
+            <select
+              value={viewMode}
+              onChange={(e) => setViewMode(e.target.value as 'list' | 'daily-grid')}
+              className="px-2 py-1 border border-gray-300 rounded"
+            >
+              <option value="list">List</option>
+              <option value="daily-grid">Daily Grid</option>
+            </select>
+          </div>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="ml-2 inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+          >
+            <svg className="-ml-1 mr-2 h-5 w-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            Create Appointment
+          </button>
+        </div>
       </div>
 
-      {/* Appointments List */}
-      <div className="bg-white shadow rounded-lg">
-        {appointments.length === 0 ? (
+      {viewMode === 'list' ? (
+        <div className="bg-white shadow rounded-lg">
+          {appointments.length === 0 ? (
           <div className="px-4 py-12 text-center">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m0 0V7a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h12V7z" />
@@ -191,6 +238,15 @@ function Calendar() {
           </div>
         )}
       </div>
+      ) : (
+        <DailyGridView
+          date={new Date(selectedDate)}
+          appointments={appointments}
+          students={students}
+          trainers={trainers}
+          config={GRID_CONFIG}
+        />
+      )}
 
       {/* Create Appointment Modal */}
       <Modal
