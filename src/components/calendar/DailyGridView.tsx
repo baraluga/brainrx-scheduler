@@ -16,6 +16,7 @@ type DailyGridViewProps = {
   students: Student[];
   trainers: Trainer[];
   config: DailyGridConfig;
+  onSelect?: (appointment: Appointment) => void;
 };
 
 type PositionedAppointment = Appointment & {
@@ -110,6 +111,7 @@ export default function DailyGridView({
   students,
   trainers,
   config,
+  onSelect,
 }: DailyGridViewProps) {
   const {
     businessStartMinutes,
@@ -258,7 +260,7 @@ export default function DailyGridView({
     return (
       <div
         key={p.id}
-        className="absolute px-2 py-1 rounded-md overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-default"
+        className="absolute px-2 py-1 rounded-md overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
         style={{
           top: startOffset + BLOCK_GAP / 2,
           height,
@@ -268,6 +270,7 @@ export default function DailyGridView({
           border: `1px solid ${borderColor}`,
         }}
         title={`${studentName} — ${trainerNick}\n${p.startTime}–${p.endTime} (${p.status})`}
+        onClick={() => onSelect?.(p)}
       >
         <div className="text-[12px] font-bold text-ink-900 truncate leading-tight">
           {studentName}

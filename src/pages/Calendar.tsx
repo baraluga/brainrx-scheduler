@@ -5,6 +5,7 @@ import { listStudents } from "../services/students";
 import { listTrainers } from "../services/trainers";
 import AppointmentForm from "../components/appointments/AppointmentForm";
 import OnboardStudentForm from "../components/calendar/OnboardStudentForm";
+import EditSessionForm from "../components/calendar/EditSessionForm";
 import Modal from "../components/common/Modal";
 import DailyGridView from "../components/calendar/DailyGridView";
 
@@ -16,12 +17,13 @@ function Calendar() {
   const [trainers] = useState<Trainer[]>(listTrainers());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isOnboardOpen, setIsOnboardOpen] = useState(false);
-  const gridContainerRef = useRef<HTMLDivElement | null>(null)
-  const [isFullscreen, setIsFullscreen] = useState(false)
+  const gridContainerRef = useRef<HTMLDivElement | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error";
   } | null>(null);
+  const [editing, setEditing] = useState<Appointment | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "daily-grid">("daily-grid");
   // Helpers to handle local date input values (YYYY-MM-DD) without UTC shifts
   const toLocalDateInputValue = (d: Date): string => {
@@ -34,7 +36,9 @@ function Calendar() {
     const [y, m, d] = value.split("-").map(Number);
     return new Date(y, (m || 1) - 1, d || 1);
   };
-  const [selectedDate, setSelectedDate] = useState<string>(toLocalDateInputValue(new Date()));
+  const [selectedDate, setSelectedDate] = useState<string>(
+    toLocalDateInputValue(new Date())
+  );
 
   const showToast = (
     message: string,
@@ -85,40 +89,43 @@ function Calendar() {
 
   // Fullscreen controls
   const enterFullscreen = async () => {
-    const el: any = gridContainerRef.current
-    if (!el) return
+    const el: any = gridContainerRef.current;
+    if (!el) return;
     if (el.requestFullscreen) {
-      await el.requestFullscreen()
+      await el.requestFullscreen();
     } else if (el.webkitRequestFullscreen) {
-      el.webkitRequestFullscreen()
+      el.webkitRequestFullscreen();
     } else if (el.msRequestFullscreen) {
-      el.msRequestFullscreen()
+      el.msRequestFullscreen();
     }
-  }
+  };
   const exitFullscreen = async () => {
-    const doc: any = document
+    const doc: any = document;
     if (document.exitFullscreen) {
-      await document.exitFullscreen()
+      await document.exitFullscreen();
     } else if (doc.webkitExitFullscreen) {
-      doc.webkitExitFullscreen()
+      doc.webkitExitFullscreen();
     } else if (doc.msExitFullscreen) {
-      doc.msExitFullscreen()
+      doc.msExitFullscreen();
     }
-  }
+  };
   useEffect(() => {
     const onChange = () => {
-      const anyDoc: any = document
-      const fsEl = document.fullscreenElement || anyDoc.webkitFullscreenElement || anyDoc.msFullscreenElement
-      setIsFullscreen(fsEl === gridContainerRef.current)
-    }
-    document.addEventListener('fullscreenchange', onChange)
+      const anyDoc: any = document;
+      const fsEl =
+        document.fullscreenElement ||
+        anyDoc.webkitFullscreenElement ||
+        anyDoc.msFullscreenElement;
+      setIsFullscreen(fsEl === gridContainerRef.current);
+    };
+    document.addEventListener("fullscreenchange", onChange);
     // Safari/WebKit
-    document.addEventListener('webkitfullscreenchange', onChange as any)
+    document.addEventListener("webkitfullscreenchange", onChange as any);
     return () => {
-      document.removeEventListener('fullscreenchange', onChange)
-      document.removeEventListener('webkitfullscreenchange', onChange as any)
-    }
-  }, [])
+      document.removeEventListener("fullscreenchange", onChange);
+      document.removeEventListener("webkitfullscreenchange", onChange as any);
+    };
+  }, []);
 
   const GRID_CONFIG = {
     businessStartMinutes: 10 * 60,
@@ -126,11 +133,11 @@ function Calendar() {
     incrementMinutes: 15,
     laneWidthPx: 64,
     slotsPerType: {
-      'training-tabletop': 10,
-      'training-digital': 10,
-      'accelerate-rx': 3,
-      'remote': 4,
-      'gt': 4,
+      "training-tabletop": 10,
+      "training-digital": 10,
+      "accelerate-rx": 3,
+      remote: 4,
+      gt: 4,
     } as Record<SessionType, number>,
   };
 
@@ -150,12 +157,12 @@ function Calendar() {
   };
 
   const getStudentName = (studentId: string) => {
-    const s = students.find((x) => x.id === studentId)
+    const s = students.find((x) => x.id === studentId);
     return s?.firstName || s?.name || "Unknown Student";
   };
 
   const getTrainerName = (trainerId: string) => {
-    const t = trainers.find((x) => x.id === trainerId)
+    const t = trainers.find((x) => x.id === trainerId);
     return t?.firstName || t?.name || "Unknown Trainer";
   };
 
@@ -181,9 +188,9 @@ function Calendar() {
       {toast && (
         <div
           className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg border ${
-            toast.type === 'success'
-              ? 'bg-primary-100 text-ink-700 border-primary-200'
-              : 'bg-red-50 text-red-700 border-red-200'
+            toast.type === "success"
+              ? "bg-primary-100 text-ink-700 border-primary-200"
+              : "bg-red-50 text-red-700 border-red-200"
           }`}
         >
           {toast.message}
@@ -203,12 +210,40 @@ function Calendar() {
         <div className="flex flex-col md:flex-row md:items-center gap-3 w-full md:w-auto">
           {viewMode === "daily-grid" && (
             <div className="flex flex-wrap items-center gap-2">
-              <button onClick={goPrevDay} className="px-2 py-1 rounded border text-sm border-gray-300 hover:bg-gray-50">◀</button>
-              <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="px-2 py-1 border text-sm border-gray-300 rounded" />
-              <button onClick={() => setSelectedDate(toLocalDateInputValue(new Date()))} className="px-2 py-1 rounded border text-sm border-gray-300 hover:bg-gray-50">Today</button>
-              <button onClick={goNextDay} className="px-2 py-1 rounded border text-sm border-gray-300 hover:bg-gray-50">▶</button>
-              <button onClick={() => (isFullscreen ? exitFullscreen() : enterFullscreen())} className="px-2 py-1 rounded border text-sm border-gray-300 hover:bg-gray-50" title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}>
-                {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+              <button
+                onClick={goPrevDay}
+                className="px-2 py-1 rounded border text-sm border-gray-300 hover:bg-gray-50"
+              >
+                ◀
+              </button>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="px-2 py-1 border text-sm border-gray-300 rounded"
+              />
+              <button
+                onClick={() =>
+                  setSelectedDate(toLocalDateInputValue(new Date()))
+                }
+                className="px-2 py-1 rounded border text-sm border-gray-300 hover:bg-gray-50"
+              >
+                Today
+              </button>
+              <button
+                onClick={goNextDay}
+                className="px-2 py-1 rounded border text-sm border-gray-300 hover:bg-gray-50"
+              >
+                ▶
+              </button>
+              <button
+                onClick={() =>
+                  isFullscreen ? exitFullscreen() : enterFullscreen()
+                }
+                className="px-2 py-1 rounded border text-sm border-gray-300 hover:bg-gray-50"
+                title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+              >
+                {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
               </button>
             </div>
           )}
@@ -216,19 +251,36 @@ function Calendar() {
             <select
               aria-label="View"
               value={viewMode}
-              onChange={(e) => setViewMode(e.target.value as "list" | "daily-grid")}
+              onChange={(e) =>
+                setViewMode(e.target.value as "list" | "daily-grid")
+              }
               className="px-2 py-1 border text-sm border-gray-300 rounded"
             >
               <option value="list">List</option>
               <option value="daily-grid">Daily Grid</option>
             </select>
-            <button onClick={() => setIsModalOpen(true)} className="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors">
-              <svg className="-ml-1 mr-2 h-5 w-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+            >
+              <svg
+                className="-ml-1 mr-2 h-5 w-5"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                  clipRule="evenodd"
+                />
               </svg>
               Add Session
             </button>
-            <button onClick={() => setIsOnboardOpen(true)} className="inline-flex items-center px-3 py-2 border border-gray-200 text-sm font-medium rounded-md text-ink-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors">
+            <button
+              onClick={() => setIsOnboardOpen(true)}
+              className="inline-flex items-center px-3 py-2 border border-gray-200 text-sm font-medium rounded-md text-ink-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+            >
               Onboard Student
             </button>
           </div>
@@ -307,7 +359,11 @@ function Calendar() {
                                 {formatTime(appointment.endTime)}
                               </div>
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                {((appointment as any).sessionType || '').replace('training-', 'training (').replace('digital', 'digital)').replace('tabletop', 'table-top)') || 'Session'}
+                                {((appointment as any).sessionType || "")
+                                  .replace("training-", "training (")
+                                  .replace("digital", "digital)")
+                                  .replace("tabletop", "table-top)") ||
+                                  "Session"}
                               </span>
                               <span
                                 className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -400,6 +456,7 @@ function Calendar() {
             students={students}
             trainers={trainers}
             config={{ ...GRID_CONFIG, nowOffsetMinutes: 600 }}
+            onSelect={(appt) => setEditing(appt)}
           />
         </div>
       )}
@@ -428,10 +485,30 @@ function Calendar() {
           onCreated={(count) => {
             refreshAppointments();
             setIsOnboardOpen(false);
-            showToast(`${count} session${count === 1 ? '' : 's'} created`);
+            showToast(`${count} session${count === 1 ? "" : "s"} created`);
           }}
           onCancel={() => setIsOnboardOpen(false)}
         />
+      </Modal>
+
+      {/* Edit Session Modal */}
+      <Modal
+        isOpen={!!editing}
+        onClose={() => setEditing(null)}
+        title="Edit Session"
+        size="md"
+      >
+        {editing && (
+          <EditSessionForm
+            initial={editing}
+            onSaved={() => {
+              refreshAppointments();
+              setEditing(null);
+              showToast("Session updated");
+            }}
+            onCancel={() => setEditing(null)}
+          />
+        )}
       </Modal>
     </div>
   );
