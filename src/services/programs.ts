@@ -1,6 +1,6 @@
-import { Program } from '@types/index'
-import { STORAGE_KEYS } from '@utils/storage'
-import * as crud from '@utils/crud'
+import { Program } from '../types/index'
+import { STORAGE_KEYS } from '../utils/storage'
+import * as crud from '../utils/crud'
 
 export function listPrograms(): Program[] {
   return crud.getAll<Program>(STORAGE_KEYS.programs)

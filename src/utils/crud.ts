@@ -17,11 +17,11 @@ export function create<T extends { id?: string }>(
   const newItem = withCreateTimestamps({
     ...data,
     id: generateId()
-  }) as T
+  } as T)
   
-  items.push(newItem)
+  items.push(newItem as T)
   saveCollection(key, items)
-  return newItem
+  return newItem as T
 }
 
 export function update<T extends { id: string }>(
@@ -47,7 +47,7 @@ export function update<T extends { id: string }>(
 }
 
 export function remove(key: string, id: string): void {
-  const items = getAll(key)
+  const items = getAll<{ id: string }>(key)
   const filteredItems = items.filter(item => item.id !== id)
   
   if (filteredItems.length === items.length) {

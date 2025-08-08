@@ -3,13 +3,13 @@ export interface User {
   name: string
   email: string
   role: 'admin' | 'trainer' | 'student'
-  createdAt: Date
-  updatedAt: Date
+  createdAt: string
+  updatedAt: string
 }
 
 export interface Student extends User {
   role: 'student'
-  dateOfBirth: Date
+  dateOfBirth: string
   guardianName?: string
   guardianEmail?: string
   guardianPhone?: string
@@ -35,8 +35,8 @@ export interface Program {
     max: number
   }
   sessions: Session[]
-  createdAt: Date
-  updatedAt: Date
+  createdAt: string
+  updatedAt: string
 }
 
 export interface Session {
@@ -44,14 +44,14 @@ export interface Session {
   programId: string
   studentId: string
   trainerId: string
-  date: Date
+  date: string
   startTime: string
   endTime: string
   status: 'scheduled' | 'completed' | 'cancelled' | 'no-show'
   notes?: string
   progress?: SessionProgress
-  createdAt: Date
-  updatedAt: Date
+  createdAt: string
+  updatedAt: string
 }
 
 export interface SessionProgress {
@@ -70,8 +70,8 @@ export interface TimeSlot {
 export interface CalendarEvent {
   id: string
   title: string
-  start: Date
-  end: Date
+  start: string
+  end: string
   type: 'session' | 'break' | 'meeting'
   studentName?: string
   trainerName?: string

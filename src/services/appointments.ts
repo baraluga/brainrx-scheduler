@@ -1,6 +1,6 @@
-import { Appointment } from '@types/index'
-import { STORAGE_KEYS } from '@utils/storage'
-import * as crud from '@utils/crud'
+import { Appointment } from '../types/index'
+import { STORAGE_KEYS } from '../utils/storage'
+import * as crud from '../utils/crud'
 
 export function listAppointments(): Appointment[] {
   return crud.getAll<Appointment>(STORAGE_KEYS.appointments)

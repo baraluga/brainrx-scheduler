@@ -1,6 +1,6 @@
-import { Student } from '@types/index'
-import { STORAGE_KEYS } from '@utils/storage'
-import * as crud from '@utils/crud'
+import { Student } from '../types/index'
+import { STORAGE_KEYS } from '../utils/storage'
+import * as crud from '../utils/crud'
 
 export function listStudents(): Student[] {
   return crud.getAll<Student>(STORAGE_KEYS.students)

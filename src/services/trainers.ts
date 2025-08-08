@@ -1,6 +1,6 @@
-import { Trainer } from '@types/index'
-import { STORAGE_KEYS } from '@utils/storage'
-import * as crud from '@utils/crud'
+import { Trainer } from '../types/index'
+import { STORAGE_KEYS } from '../utils/storage'
+import * as crud from '../utils/crud'
 
 export function listTrainers(): Trainer[] {
   return crud.getAll<Trainer>(STORAGE_KEYS.trainers)

@@ -1,7 +1,8 @@
-import { listPrograms } from '@services/programs'
-import { listStudents } from '@services/students'
-import { listTrainers } from '@services/trainers'
-import { listAppointments } from '@services/appointments'
+import { listPrograms } from '../services/programs'
+import { listStudents } from '../services/students'
+import { listTrainers } from '../services/trainers'
+import { listAppointments } from '../services/appointments'
+import { Appointment } from '../types/index'
 
 function Dashboard() {
   const programs = listPrograms()
@@ -10,7 +11,7 @@ function Dashboard() {
   const appointments = listAppointments()
   
   const today = new Date().toDateString()
-  const todaysAppointments = appointments.filter(appointment => {
+  const todaysAppointments = appointments.filter((appointment: Appointment) => {
     const appointmentDate = new Date(appointment.date).toDateString()
     return appointmentDate === today && appointment.status === 'scheduled'
   })

@@ -1,8 +1,8 @@
-import { Student, Trainer, Program, Appointment } from '@types/index'
-import { listStudents, createStudent } from '@services/students'
-import { listTrainers, createTrainer } from '@services/trainers'
-import { listPrograms, createProgram } from '@services/programs'
-import { listAppointments, createAppointment } from '@services/appointments'
+import { Student, Trainer, Program, Appointment } from '../types/index'
+import { listStudents, createStudent } from '../services/students'
+import { listTrainers, createTrainer } from '../services/trainers'
+import { listPrograms, createProgram } from '../services/programs'
+import { listAppointments, createAppointment } from '../services/appointments'
 
 const seedPrograms = (): string[] => {
   const programs: Omit<Program, 'id' | 'createdAt' | 'updatedAt'>[] = [
@@ -86,13 +86,13 @@ const seedTrainers = (): string[] => {
   return trainers.map(trainer => createTrainer(trainer).id)
 }
 
-const seedStudents = (programIds: string[]): string[] => {
+const seedStudents = (): string[] => {
   const students: Omit<Student, 'id' | 'createdAt' | 'updatedAt'>[] = [
     {
       name: 'Emma Wilson',
       email: 'emma.wilson.parent@email.com',
       role: 'student',
-      dateOfBirth: new Date('2012-03-15').toISOString(),
+      dateOfBirth: '2012-03-15T00:00:00.000Z',
       guardianName: 'Jennifer Wilson',
       guardianEmail: 'jennifer.wilson@email.com',
       guardianPhone: '(555) 123-4567',
@@ -103,7 +103,7 @@ const seedStudents = (programIds: string[]): string[] => {
       name: 'Alex Thompson',
       email: 'alex.thompson.parent@email.com',
       role: 'student',
-      dateOfBirth: new Date('2010-07-22').toISOString(),
+      dateOfBirth: '2010-07-22T00:00:00.000Z',
       guardianName: 'David Thompson',
       guardianEmail: 'david.thompson@email.com',
       guardianPhone: '(555) 234-5678',
@@ -113,7 +113,7 @@ const seedStudents = (programIds: string[]): string[] => {
       name: 'Maya Patel',
       email: 'maya.patel.parent@email.com',
       role: 'student',
-      dateOfBirth: new Date('2014-11-08').toISOString(),
+      dateOfBirth: '2014-11-08T00:00:00.000Z',
       guardianName: 'Priya Patel',
       guardianEmail: 'priya.patel@email.com',
       guardianPhone: '(555) 345-6789',
@@ -124,7 +124,7 @@ const seedStudents = (programIds: string[]): string[] => {
       name: 'Jordan Davis',
       email: 'jordan.davis.parent@email.com',
       role: 'student',
-      dateOfBirth: new Date('2013-01-30').toISOString(),
+      dateOfBirth: '2013-01-30T00:00:00.000Z',
       guardianName: 'Angela Davis',
       guardianEmail: 'angela.davis@email.com',
       guardianPhone: '(555) 456-7890',
@@ -134,7 +134,7 @@ const seedStudents = (programIds: string[]): string[] => {
       name: 'Sophie Martinez',
       email: 'sophie.martinez.parent@email.com',
       role: 'student',
-      dateOfBirth: new Date('2011-09-12').toISOString(),
+      dateOfBirth: '2011-09-12T00:00:00.000Z',
       guardianName: 'Carlos Martinez',
       guardianEmail: 'carlos.martinez@email.com',
       guardianPhone: '(555) 567-8901',
@@ -227,7 +227,7 @@ export function seedIfEmpty(): void {
     // Seed in dependency order
     const programIds = seedPrograms()
     const trainerIds = seedTrainers()
-    const studentIds = seedStudents(programIds)
+    const studentIds = seedStudents()
     seedAppointments(studentIds, trainerIds, programIds)
     
     console.log('Seed data created successfully')
