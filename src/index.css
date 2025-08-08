@@ -4,20 +4,25 @@
 
 @layer base {
   html, body {
-    @apply h-full;
+    @apply h-full bg-warm-50 text-ink-500 antialiased;
+    font-family: 'Nunito', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji';
   }
   
   #root {
     @apply h-full;
   }
+  
+  h1,h2,h3,h4,h5,h6 {
+    @apply text-ink-900;
+  }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md transition-colors duration-200;
+    @apply bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 shadow-sm;
   }
   
   .btn-secondary {
-    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md transition-colors duration-200;
+    @apply bg-white hover:bg-gray-50 text-ink-700 px-4 py-2 rounded-lg border border-gray-200 transition-colors duration-200 shadow-sm;
   }
 }
