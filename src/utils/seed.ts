@@ -160,11 +160,14 @@ const seedAppointments = (studentIds: string[], trainerIds: string[]): void => {
 }
 
 // Seed a dense set of appointments for August 9, 2025 to visualize the daily grid
-const seedAug9_2025IfMissing = (): void => {
+const seedAug9_2025IfLight = (): void => {
   const target = new Date(2025, 7, 9) // Aug is month index 7
   const targetKey = target.toDateString()
-  const existingOnTarget = listAppointments().some(a => new Date(a.date).toDateString() === targetKey)
-  if (existingOnTarget) return
+  const existing = listAppointments().filter(a => new Date(a.date).toDateString() === targetKey)
+  const existingCount = existing.length
+  // If we already have a busy day, skip. Otherwise, top it up to be dense.
+  const MIN_TARGET_COUNT = 80
+  if (existingCount >= MIN_TARGET_COUNT) return
 
   const students = listStudents()
   const trainers = listTrainers()
@@ -240,6 +243,7 @@ const seedAug9_2025IfMissing = (): void => {
 
   // Persist
   appts.forEach(a => createAppointment(a))
+  console.log(`[seed] Added ${appts.length} demo appointments for Aug 9, 2025 (existing: ${existingCount})`)
 }
 
 export function seedIfEmpty(): void {
@@ -264,5 +268,5 @@ export function seedIfEmpty(): void {
   }
 
   // Always attempt to seed the dense demo day for Aug 9, 2025 if it's not present
-  seedAug9_2025IfMissing()
+  seedAug9_2025IfLight()
 }
