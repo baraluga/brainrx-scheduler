@@ -35,6 +35,39 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
   const [students] = useState<Student[]>(listStudents())
   const [trainers] = useState<Trainer[]>(listTrainers())
   
+  // Business hours and time utilities
+  const BUSINESS_START_MINUTES = 8 * 60 // 08:00
+  const BUSINESS_END_MINUTES = 18 * 60 // 18:00
+  const INCREMENT = 15
+
+  const minutesToHHMM = (mins: number): string => {
+    const h = Math.floor(mins / 60)
+    const m = mins % 60
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  }
+
+  const generateStartTimeOptions = (): string[] => {
+    const latestStart = BUSINESS_END_MINUTES - 60 // ensure at least 1h duration
+    const options: string[] = []
+    for (let t = BUSINESS_START_MINUTES; t <= latestStart; t += INCREMENT) {
+      options.push(minutesToHHMM(t))
+    }
+    return options
+  }
+
+  const generateEndTimeOptions = (startTime?: string): string[] => {
+    if (!startTime) return []
+    const [sh, sm] = startTime.split(':').map(Number)
+    const startMins = sh * 60 + sm
+    const minEnd = startMins + 60
+    const maxEnd = Math.min(startMins + 120, BUSINESS_END_MINUTES)
+    const options: string[] = []
+    for (let t = minEnd; t <= maxEnd; t += INCREMENT) {
+      options.push(minutesToHHMM(t))
+    }
+    return options
+  }
+
   const [formData, setFormData] = useState<AppointmentFormData>({
     appointmentType: initial?.appointmentType || 'training',
     date: initial?.date ? initial.date.split('T')[0] : '',
@@ -120,6 +153,14 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
     // Clear trainer selection if appointment type changes
     if (field === 'appointmentType') {
       setFormData(prev => ({ ...prev, trainerId: '' }))
+    }
+
+    // If start time changes, ensure end time remains valid; otherwise clear it
+    if (field === 'startTime') {
+      const allowedEnds = new Set(generateEndTimeOptions(value))
+      if (!allowedEnds.has(formData.endTime)) {
+        setFormData(prev => ({ ...prev, endTime: '' }))
+      }
     }
     
     // Validate this field and update errors
@@ -216,17 +257,39 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
         <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
           Date *
         </label>
-        <input
-          type="date"
-          id="date"
-          value={formData.date}
-          onChange={(e) => handleFieldChange('date', e.target.value)}
-          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-            errors.date ? 'border-red-500' : 'border-gray-300'
-          }`}
-          aria-invalid={!!errors.date}
-          aria-describedby={errors.date ? 'date-error' : undefined}
-        />
+        <div
+          className={`w-full px-3 py-2 border rounded-md ${errors.date ? 'border-red-500' : 'border-gray-300'} bg-white`}
+          onClick={() => {
+            const el = document.getElementById('date') as HTMLInputElement | null
+            if (el) {
+              // Try to open the native picker if available; otherwise focus
+              // @ts-ignore - showPicker is experimental
+              if (typeof el.showPicker === 'function') { el.showPicker() } else { el.focus() }
+            }
+          }}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              const el = document.getElementById('date') as HTMLInputElement | null
+              if (el) {
+                // @ts-ignore
+                if (typeof el.showPicker === 'function') { el.showPicker() } else { el.focus() }
+              }
+            }
+          }}
+        >
+          <input
+            type="date"
+            id="date"
+            value={formData.date}
+            onChange={(e) => handleFieldChange('date', e.target.value)}
+            className="w-full bg-transparent outline-none"
+            aria-invalid={!!errors.date}
+            aria-describedby={errors.date ? 'date-error' : undefined}
+          />
+        </div>
         {errors.date && (
           <p id="date-error" className={`mt-1 text-sm ${errors.date.includes('Warning') ? 'text-yellow-600' : 'text-red-600'}`}>
             {errors.date}
@@ -240,10 +303,8 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
           <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-2">
             Start Time *
           </label>
-          <input
-            type="time"
+          <select
             id="startTime"
-            step="900" // 15-minute steps
             value={formData.startTime}
             onChange={(e) => handleFieldChange('startTime', e.target.value)}
             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
@@ -251,11 +312,14 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
             }`}
             aria-invalid={!!errors.startTime}
             aria-describedby={errors.startTime ? 'startTime-error' : undefined}
-          />
+          >
+            <option value="">Select start time</option>
+            {generateStartTimeOptions().map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
           {errors.startTime && (
-            <p id="startTime-error" className="mt-1 text-sm text-red-600">
-              {errors.startTime}
-            </p>
+            <p id="startTime-error" className="mt-1 text-sm text-red-600">{errors.startTime}</p>
           )}
         </div>
 
@@ -263,10 +327,8 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
           <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-2">
             End Time *
           </label>
-          <input
-            type="time"
+          <select
             id="endTime"
-            step="900" // 15-minute steps
             value={formData.endTime}
             onChange={(e) => handleFieldChange('endTime', e.target.value)}
             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
@@ -274,11 +336,15 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
             }`}
             aria-invalid={!!errors.endTime}
             aria-describedby={errors.endTime ? 'endTime-error' : undefined}
-          />
+            disabled={!formData.startTime}
+          >
+            <option value="">{formData.startTime ? 'Select end time' : 'Select start time first'}</option>
+            {generateEndTimeOptions(formData.startTime).map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
           {errors.endTime && (
-            <p id="endTime-error" className="mt-1 text-sm text-red-600">
-              {errors.endTime}
-            </p>
+            <p id="endTime-error" className="mt-1 text-sm text-red-600">{errors.endTime}</p>
           )}
         </div>
       </div>
