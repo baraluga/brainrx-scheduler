@@ -76,3 +76,5 @@ export interface CalendarEvent {
   studentName?: string
   trainerName?: string
 }
+
+export type Appointment = Session
