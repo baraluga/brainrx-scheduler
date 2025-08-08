@@ -21,7 +21,7 @@ function Dashboard() {
           Dashboard
         </h2>
         <p className="mt-2 text-sm text-gray-600">
-          Welcome to BrainRX Scheduler. Manage your students, trainers, and appointments all in one place.
+          Welcome to BrainRX Scheduler. Manage your students, trainers, and sessions all in one place.
         </p>
       </div>
 
@@ -86,7 +86,7 @@ function Dashboard() {
           <h3 className="text-lg leading-6 font-medium text-gray-900">Quick Actions</h3>
           <div className="mt-5">
             <div className="flex flex-wrap gap-3">
-              <button className="btn-primary">Schedule Session</button>
+              <button className="btn-primary">Add Session</button>
               <button className="btn-secondary">Add Student</button>
               <button className="btn-secondary">View Reports</button>
             </div>

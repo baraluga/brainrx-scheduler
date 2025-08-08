@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { Appointment, Student, Trainer } from "../types/index";
+import { Appointment, Student, Trainer, SessionType } from "../types/index";
 import { listAppointments, createAppointment } from "../services/appointments";
 import { listStudents } from "../services/students";
 import { listTrainers } from "../services/trainers";
@@ -124,9 +124,12 @@ function Calendar() {
     incrementMinutes: 15,
     laneWidthPx: 80,
     slotsPerType: {
-      training: 10,
-      "gt-assessment": 4,
-    } as const,
+      'training-tabletop': 10,
+      'training-digital': 10,
+      'accelerate-rx': 3,
+      'remote': 4,
+      'gt': 4,
+    } as Record<SessionType, number>,
   };
 
   const handleCreateAppointment = (
@@ -136,10 +139,10 @@ function Calendar() {
       const newAppointment = createAppointment(data);
       refreshAppointments();
       setIsModalOpen(false);
-      showToast("Appointment created successfully");
+      showToast("Session added successfully");
       console.log("Appointment created:", newAppointment);
     } catch (error) {
-      showToast("Failed to create appointment", "error");
+      showToast("Failed to add session", "error");
       console.error("Create appointment failed:", error);
     }
   };
@@ -260,7 +263,7 @@ function Calendar() {
                 clipRule="evenodd"
               />
             </svg>
-            Create Appointment
+            Add Session
           </button>
         </div>
       </div>
@@ -283,10 +286,10 @@ function Calendar() {
                 />
               </svg>
               <h3 className="mt-2 text-sm font-medium text-gray-900">
-                No appointments
+                No sessions
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                Get started by creating your first appointment.
+                Get started by adding your first session.
               </p>
               <div className="mt-6">
                 <button
@@ -305,7 +308,7 @@ function Calendar() {
                       clipRule="evenodd"
                     />
                   </svg>
-                  Create Appointment
+                  Add Session
                 </button>
               </div>
             </div>
@@ -336,16 +339,8 @@ function Calendar() {
                                 {formatTime(appointment.startTime)} -{" "}
                                 {formatTime(appointment.endTime)}
                               </div>
-                              <span
-                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                  appointment.appointmentType === "training"
-                                    ? "bg-blue-100 text-blue-800"
-                                    : "bg-purple-100 text-purple-800"
-                                }`}
-                              >
-                                {appointment.appointmentType === "training"
-                                  ? "Training"
-                                  : "GT Assessment"}
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                {((appointment as any).sessionType || '').replace('training-', 'training (').replace('digital', 'digital)').replace('tabletop', 'table-top)') || 'Session'}
                               </span>
                               <span
                                 className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -442,11 +437,11 @@ function Calendar() {
         </div>
       )}
 
-      {/* Create Appointment Modal */}
+      {/* Add Session Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Create New Appointment"
+        title="Add Session"
         size="lg"
       >
         <AppointmentForm

@@ -1,11 +1,11 @@
 import { useMemo } from 'react'
-import { Appointment, AppointmentType, Student, Trainer } from '../../types/index'
+import { Appointment, SessionType, Student, Trainer } from '../../types/index'
 
 type DailyGridConfig = {
   businessStartMinutes: number // minutes from midnight (e.g., 10:00 → 600)
   businessEndMinutes: number   // minutes from midnight (e.g., 19:00 → 1140)
   incrementMinutes: number     // 15
-  slotsPerType: Record<AppointmentType, number>
+  slotsPerType: Record<SessionType, number>
   laneWidthPx?: number         // default 120
 }
 
@@ -98,6 +98,13 @@ export default function DailyGridView({ date, appointments, students, trainers, 
     return appointments.filter((a) => new Date(a.date).toDateString() === dateKey)
   }, [appointments, dateKey])
 
+  const getSessionType = (a: any): SessionType => {
+    if (a.sessionType) return a.sessionType as SessionType
+    if (a.appointmentType === 'training') return 'training-tabletop'
+    if (a.appointmentType === 'gt-assessment') return 'gt'
+    return 'training-tabletop'
+  }
+
   const minsToLabel = (mins: number): string => {
     const h = Math.floor(mins / 60)
     const m = mins % 60
@@ -114,17 +121,38 @@ export default function DailyGridView({ date, appointments, students, trainers, 
     return list
   }, [businessStartMinutes, businessEndMinutes, incrementMinutes])
 
-  const trainingPositioned = useMemo(() => {
+  const tabletopPositioned = useMemo(() => {
     return placeInLanes(
-      dayAppointments.filter((a) => a.appointmentType === 'training'),
-      slotsPerType['training']
+      dayAppointments.filter((a) => getSessionType(a) === 'training-tabletop'),
+      slotsPerType['training-tabletop']
+    )
+  }, [dayAppointments, slotsPerType])
+
+  const digitalPositioned = useMemo(() => {
+    return placeInLanes(
+      dayAppointments.filter((a) => getSessionType(a) === 'training-digital'),
+      slotsPerType['training-digital']
+    )
+  }, [dayAppointments, slotsPerType])
+
+  const arxPositioned = useMemo(() => {
+    return placeInLanes(
+      dayAppointments.filter((a) => getSessionType(a) === 'accelerate-rx'),
+      slotsPerType['accelerate-rx']
+    )
+  }, [dayAppointments, slotsPerType])
+
+  const remotePositioned = useMemo(() => {
+    return placeInLanes(
+      dayAppointments.filter((a) => getSessionType(a) === 'remote'),
+      slotsPerType['remote']
     )
   }, [dayAppointments, slotsPerType])
 
   const gtPositioned = useMemo(() => {
     return placeInLanes(
-      dayAppointments.filter((a) => a.appointmentType === 'gt-assessment'),
-      slotsPerType['gt-assessment']
+      dayAppointments.filter((a) => getSessionType(a) === 'gt'),
+      slotsPerType['gt']
     )
   }, [dayAppointments, slotsPerType])
 
@@ -178,29 +206,56 @@ export default function DailyGridView({ date, appointments, students, trainers, 
     )
   }
 
-  const trainingColWidth = slotsPerType['training'] * LANE_WIDTH
-  const gtColWidth = slotsPerType['gt-assessment'] * LANE_WIDTH
+  const ttColWidth = slotsPerType['training-tabletop'] * LANE_WIDTH
+  const dgColWidth = slotsPerType['training-digital'] * LANE_WIDTH
+  const arxColWidth = slotsPerType['accelerate-rx'] * LANE_WIDTH
+  const rmColWidth = slotsPerType['remote'] * LANE_WIDTH
+  const gtColWidth = slotsPerType['gt'] * LANE_WIDTH
 
   return (
     <div className="bg-white shadow rounded-lg overflow-x-auto">
-      <div className="grid" style={{ gridTemplateColumns: `120px ${trainingColWidth}px ${gtColWidth}px` }}>
+      <div className="grid" style={{ gridTemplateColumns: `120px ${ttColWidth}px ${dgColWidth}px ${arxColWidth}px ${rmColWidth}px ${gtColWidth}px` }}>
         {/* Two-level header */}
         <div className="border-b border-gray-200" />
-        <div className="border-b border-gray-200 text-center font-semibold py-2">Training</div>
+        <div className="border-b border-gray-200 text-center font-semibold py-2">Training (Table-top)</div>
+        <div className="border-b border-gray-200 text-center font-semibold py-2">Training (Digital)</div>
+        <div className="border-b border-gray-200 text-center font-semibold py-2">AccelerateRx</div>
+        <div className="border-b border-gray-200 text-center font-semibold py-2">Remote</div>
         <div className="border-b border-gray-200 text-center font-semibold py-2">GT</div>
 
         {/* Second header row with slot numbers */}
         <div className="border-b border-gray-200 bg-gray-50 text-xs text-gray-600 py-2 px-3">Time</div>
         <div className="border-b border-gray-200 bg-gray-50">
-          <div className="grid" style={{ gridTemplateColumns: `repeat(${slotsPerType['training']}, ${LANE_WIDTH}px)` }}>
-            {Array.from({ length: slotsPerType['training'] }).map((_, i) => (
+          <div className="grid" style={{ gridTemplateColumns: `repeat(${slotsPerType['training-tabletop']}, ${LANE_WIDTH}px)` }}>
+            {Array.from({ length: slotsPerType['training-tabletop'] }).map((_, i) => (
               <div key={i} className="text-xs text-gray-600 text-center py-2 border-l first:border-l-0 border-gray-200">{i + 1}</div>
             ))}
           </div>
         </div>
         <div className="border-b border-gray-200 bg-gray-50">
-          <div className="grid" style={{ gridTemplateColumns: `repeat(${slotsPerType['gt-assessment']}, ${LANE_WIDTH}px)` }}>
-            {Array.from({ length: slotsPerType['gt-assessment'] }).map((_, i) => (
+          <div className="grid" style={{ gridTemplateColumns: `repeat(${slotsPerType['training-digital']}, ${LANE_WIDTH}px)` }}>
+            {Array.from({ length: slotsPerType['training-digital'] }).map((_, i) => (
+              <div key={i} className="text-xs text-gray-600 text-center py-2 border-l first:border-l-0 border-gray-200">{i + 1}</div>
+            ))}
+          </div>
+        </div>
+        <div className="border-b border-gray-200 bg-gray-50">
+          <div className="grid" style={{ gridTemplateColumns: `repeat(${slotsPerType['accelerate-rx']}, ${LANE_WIDTH}px)` }}>
+            {Array.from({ length: slotsPerType['accelerate-rx'] }).map((_, i) => (
+              <div key={i} className="text-xs text-gray-600 text-center py-2 border-l first:border-l-0 border-gray-200">{i + 1}</div>
+            ))}
+          </div>
+        </div>
+        <div className="border-b border-gray-200 bg-gray-50">
+          <div className="grid" style={{ gridTemplateColumns: `repeat(${slotsPerType['remote']}, ${LANE_WIDTH}px)` }}>
+            {Array.from({ length: slotsPerType['remote'] }).map((_, i) => (
+              <div key={i} className="text-xs text-gray-600 text-center py-2 border-l first:border-l-0 border-gray-200">{i + 1}</div>
+            ))}
+          </div>
+        </div>
+        <div className="border-b border-gray-200 bg-gray-50">
+          <div className="grid" style={{ gridTemplateColumns: `repeat(${slotsPerType['gt']}, ${LANE_WIDTH}px)` }}>
+            {Array.from({ length: slotsPerType['gt'] }).map((_, i) => (
               <div key={i} className="text-xs text-gray-600 text-center py-2 border-l first:border-l-0 border-gray-200">{i + 1}</div>
             ))}
           </div>
@@ -216,14 +271,41 @@ export default function DailyGridView({ date, appointments, students, trainers, 
             ))}
           </div>
         </div>
-        <div className="relative border-l border-gray-200" style={{ height: gridHeight, width: trainingColWidth }}>
+        <div className="relative border-l border-gray-200" style={{ height: gridHeight, width: ttColWidth }}>
           {/* Background grid lines */}
           {timeSlots.map((mins) => (
             <div key={mins} className="absolute left-0 right-0 border-t border-gray-100" style={{ top: ((mins - businessStartMinutes) / incrementMinutes) * rowHeight }} />
           ))}
           {/* Appointments */}
-          {trainingPositioned.map(renderAppt)}
+          {tabletopPositioned.map(renderAppt)}
           {/* Now line */}
+          {nowLineTop !== null && (
+            <div className="absolute left-0 right-0 border-t-2 border-red-500" style={{ top: nowLineTop }} />
+          )}
+        </div>
+        <div className="relative border-l border-gray-200" style={{ height: gridHeight, width: dgColWidth }}>
+          {timeSlots.map((mins) => (
+            <div key={mins} className="absolute left-0 right-0 border-t border-gray-100" style={{ top: ((mins - businessStartMinutes) / incrementMinutes) * rowHeight }} />
+          ))}
+          {digitalPositioned.map(renderAppt)}
+          {nowLineTop !== null && (
+            <div className="absolute left-0 right-0 border-t-2 border-red-500" style={{ top: nowLineTop }} />
+          )}
+        </div>
+        <div className="relative border-l border-gray-200" style={{ height: gridHeight, width: arxColWidth }}>
+          {timeSlots.map((mins) => (
+            <div key={mins} className="absolute left-0 right-0 border-t border-gray-100" style={{ top: ((mins - businessStartMinutes) / incrementMinutes) * rowHeight }} />
+          ))}
+          {arxPositioned.map(renderAppt)}
+          {nowLineTop !== null && (
+            <div className="absolute left-0 right-0 border-t-2 border-red-500" style={{ top: nowLineTop }} />
+          )}
+        </div>
+        <div className="relative border-l border-gray-200" style={{ height: gridHeight, width: rmColWidth }}>
+          {timeSlots.map((mins) => (
+            <div key={mins} className="absolute left-0 right-0 border-t border-gray-100" style={{ top: ((mins - businessStartMinutes) / incrementMinutes) * rowHeight }} />
+          ))}
+          {remotePositioned.map(renderAppt)}
           {nowLineTop !== null && (
             <div className="absolute left-0 right-0 border-t-2 border-red-500" style={{ top: nowLineTop }} />
           )}

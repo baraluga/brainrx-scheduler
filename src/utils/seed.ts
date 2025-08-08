@@ -100,7 +100,7 @@ const seedAppointments = (studentIds: string[], trainerIds: string[]): void => {
   const today = new Date()
   const appointments: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'>[] = [
     {
-      appointmentType: 'training',
+      sessionType: 'training-tabletop' as any,
       studentId: studentIds[0],
       trainerId: trainerIds[0],
       date: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 10, 0).toISOString(),
@@ -110,7 +110,7 @@ const seedAppointments = (studentIds: string[], trainerIds: string[]): void => {
       notes: 'Initial assessment session'
     },
     {
-      appointmentType: 'gt-assessment',
+      sessionType: 'gt' as any,
       studentId: studentIds[1],
       trainerId: trainerIds[1],
       date: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 14, 0).toISOString(),
@@ -120,7 +120,7 @@ const seedAppointments = (studentIds: string[], trainerIds: string[]): void => {
       notes: 'Follow-up session'
     },
     {
-      appointmentType: 'training',
+      sessionType: 'training-digital' as any,
       studentId: studentIds[2],
       trainerId: trainerIds[2],
       date: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 16, 0).toISOString(),
@@ -129,7 +129,7 @@ const seedAppointments = (studentIds: string[], trainerIds: string[]): void => {
       status: 'scheduled'
     },
     {
-      appointmentType: 'training',
+      sessionType: 'accelerate-rx' as any,
       studentId: studentIds[3],
       trainerId: trainerIds[0],
       date: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, 9, 0).toISOString(),
@@ -139,7 +139,7 @@ const seedAppointments = (studentIds: string[], trainerIds: string[]): void => {
       notes: 'Progress evaluation'
     },
     {
-      appointmentType: 'training',
+      sessionType: 'training-tabletop' as any,
       studentId: studentIds[4],
       trainerId: trainerIds[1],
       date: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1, 11, 0).toISOString(),
@@ -187,15 +187,15 @@ const seedAug9_2025IfLight = (): void => {
   const randomFrom = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]
   const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n))
 
-  const createBlock = (startMins: number, durationMins: number, type: Appointment['appointmentType']): Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'> => {
+  const createBlock = (startMins: number, durationMins: number, type: any): Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'> => {
     const s = minutesToHHMM(startMins)
     const e = minutesToHHMM(startMins + durationMins)
     const student = randomFrom(students)
     // For GT, ensure trainer can do GT if available; else fall back to any
-    const eligibleTrainers = type === 'gt-assessment' ? trainers.filter(t => t.canDoGtAssessments) : trainers
+    const eligibleTrainers = type === 'gt' ? trainers.filter(t => t.canDoGtAssessments) : trainers
     const trainer = (eligibleTrainers.length ? randomFrom(eligibleTrainers) : randomFrom(trainers))
     return {
-      appointmentType: type,
+      sessionType: type,
       studentId: student.id,
       trainerId: trainer.id,
       date: new Date(2025, 7, 9, Math.floor(startMins / 60), startMins % 60).toISOString(),
@@ -221,7 +221,7 @@ const seedAug9_2025IfLight = (): void => {
       const roundedDuration = duration - (duration % INCREMENT)
       const safeDuration = clamp(roundedDuration, 30, 120)
       if (cursor + safeDuration > BUSINESS_END) break
-      appts.push(createBlock(cursor, safeDuration, 'training'))
+      appts.push(createBlock(cursor, safeDuration, 'training-tabletop'))
       addedTraining++
       // gap between 15-45 minutes
       const gapChoices = [15, 15, 30, 30, 45]
@@ -239,7 +239,7 @@ const seedAug9_2025IfLight = (): void => {
       const roundedDuration = duration - (duration % INCREMENT)
       const safeDuration = clamp(roundedDuration, 30, 120)
       if (cursor + safeDuration > BUSINESS_END) break
-      appts.push(createBlock(cursor, safeDuration, 'gt-assessment'))
+      appts.push(createBlock(cursor, safeDuration, 'gt'))
       addedGT++
       const gapChoices = [15, 30, 30, 45]
       const gap = gapChoices[Math.floor(Math.random() * gapChoices.length)]

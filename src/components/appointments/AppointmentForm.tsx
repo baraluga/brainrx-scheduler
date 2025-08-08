@@ -1,11 +1,11 @@
 import { useState, useEffect, FormEvent } from 'react'
-import { Appointment, AppointmentType, Student, Trainer } from '../../types/index'
+import { Appointment, SessionType, Student, Trainer } from '../../types/index'
 import { listStudents } from '../../services/students'
 import { listTrainers } from '../../services/trainers'
 import { validateTimeSlot } from '../../utils/validation'
 
 interface AppointmentFormData {
-  appointmentType: AppointmentType
+  sessionType: SessionType
   date: string
   startTime: string
   endTime: string
@@ -15,7 +15,7 @@ interface AppointmentFormData {
 }
 
 interface AppointmentFormErrors {
-  appointmentType?: string
+  sessionType?: string
   date?: string
   startTime?: string
   endTime?: string
@@ -31,7 +31,7 @@ interface AppointmentFormProps {
   submitLabel?: string
 }
 
-export default function AppointmentForm({ initial, onSubmit, onCancel, submitLabel = 'Create Appointment' }: AppointmentFormProps) {
+export default function AppointmentForm({ initial, onSubmit, onCancel, submitLabel = 'Add Session' }: AppointmentFormProps) {
   const [students] = useState<Student[]>(listStudents())
   const [trainers] = useState<Trainer[]>(listTrainers())
   
@@ -69,7 +69,7 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
   }
 
   const [formData, setFormData] = useState<AppointmentFormData>({
-    appointmentType: initial?.appointmentType || 'training',
+    sessionType: (initial as any)?.sessionType || 'training-tabletop',
     date: initial?.date ? initial.date.split('T')[0] : '',
     startTime: initial?.startTime || '',
     endTime: initial?.endTime || '',
@@ -80,15 +80,15 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
 
   const [errors, setErrors] = useState<AppointmentFormErrors>({})
 
-  // Get available trainers based on appointment type
-  const availableTrainers = formData.appointmentType === 'gt-assessment'
+  // Get available trainers based on session type
+  const availableTrainers = formData.sessionType === 'gt'
     ? trainers.filter(trainer => trainer.canDoGtAssessments)
     : trainers
 
   const validateField = (name: string, value: string): string | undefined => {
     switch (name) {
-      case 'appointmentType':
-        if (!value) return 'Appointment type is required'
+      case 'sessionType':
+        if (!value) return 'Session type is required'
         break
       
       case 'date':
@@ -133,7 +133,7 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
   const validateForm = () => {
     const newErrors: AppointmentFormErrors = {}
     
-    newErrors.appointmentType = validateField('appointmentType', formData.appointmentType)
+    newErrors.sessionType = validateField('sessionType', formData.sessionType)
     newErrors.date = validateField('date', formData.date)
     newErrors.startTime = validateField('startTime', formData.startTime)
     newErrors.endTime = validateField('endTime', formData.endTime)
@@ -150,8 +150,8 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
   const handleFieldChange = (field: keyof AppointmentFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     
-    // Clear trainer selection if appointment type changes
-    if (field === 'appointmentType') {
+    // Clear trainer selection if session type changes
+    if (field === 'sessionType') {
       setFormData(prev => ({ ...prev, trainerId: '' }))
     }
 
@@ -188,7 +188,7 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
     }
 
     const submitData = {
-      appointmentType: formData.appointmentType,
+      sessionType: formData.sessionType,
       date: new Date(formData.date).toISOString(),
       startTime: formData.startTime,
       endTime: formData.endTime,
@@ -216,38 +216,71 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Appointment Type */}
+      {/* Session Type */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-3">
-          Appointment Type *
+          Session Type *
         </label>
         <div className="space-y-2">
           <label className="flex items-center">
             <input
               type="radio"
-              name="appointmentType"
-              value="training"
-              checked={formData.appointmentType === 'training'}
-              onChange={(e) => handleFieldChange('appointmentType', e.target.value as AppointmentType)}
+              name="sessionType"
+              value="training-tabletop"
+              checked={formData.sessionType === 'training-tabletop'}
+              onChange={(e) => handleFieldChange('sessionType', e.target.value as SessionType)}
               className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
             />
-            <span className="ml-2 text-sm text-gray-700">Training Session</span>
+            <span className="ml-2 text-sm text-gray-700">Training (Table-top)</span>
           </label>
           <label className="flex items-center">
             <input
               type="radio"
-              name="appointmentType"
-              value="gt-assessment"
-              checked={formData.appointmentType === 'gt-assessment'}
-              onChange={(e) => handleFieldChange('appointmentType', e.target.value as AppointmentType)}
+              name="sessionType"
+              value="training-digital"
+              checked={formData.sessionType === 'training-digital'}
+              onChange={(e) => handleFieldChange('sessionType', e.target.value as SessionType)}
               className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
             />
-            <span className="ml-2 text-sm text-gray-700">GT Assessment</span>
+            <span className="ml-2 text-sm text-gray-700">Training (Digital)</span>
+          </label>
+          <label className="flex items-center">
+            <input
+              type="radio"
+              name="sessionType"
+              value="accelerate-rx"
+              checked={formData.sessionType === 'accelerate-rx'}
+              onChange={(e) => handleFieldChange('sessionType', e.target.value as SessionType)}
+              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
+            />
+            <span className="ml-2 text-sm text-gray-700">AccelerateRx</span>
+          </label>
+          <label className="flex items-center">
+            <input
+              type="radio"
+              name="sessionType"
+              value="remote"
+              checked={formData.sessionType === 'remote'}
+              onChange={(e) => handleFieldChange('sessionType', e.target.value as SessionType)}
+              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
+            />
+            <span className="ml-2 text-sm text-gray-700">Remote</span>
+          </label>
+          <label className="flex items-center">
+            <input
+              type="radio"
+              name="sessionType"
+              value="gt"
+              checked={formData.sessionType === 'gt'}
+              onChange={(e) => handleFieldChange('sessionType', e.target.value as SessionType)}
+              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
+            />
+            <span className="ml-2 text-sm text-gray-700">GT</span>
           </label>
         </div>
-        {errors.appointmentType && (
+        {errors.sessionType && (
           <p className="mt-1 text-sm text-red-600">
-            {errors.appointmentType}
+            {errors.sessionType}
           </p>
         )}
       </div>
@@ -392,7 +425,7 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
         <label htmlFor="trainerId" className="block text-sm font-medium text-gray-700 mb-2">
           Trainer *
         </label>
-        {availableTrainers.length === 0 && formData.appointmentType === 'gt-assessment' && (
+        {availableTrainers.length === 0 && formData.sessionType === 'gt' && (
           <div className="mb-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
             <p className="text-sm text-yellow-800">
               No trainers are certified for GT Assessment. Please ensure at least one trainer has "GT Assessment" certification.
@@ -435,7 +468,7 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
           value={formData.notes}
           onChange={(e) => handleFieldChange('notes', e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-          placeholder="Optional notes about the appointment..."
+          placeholder="Optional notes about the session..."
         />
       </div>
 

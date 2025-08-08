@@ -55,6 +55,14 @@ export interface CalendarEvent {
   trainerName?: string
 }
 
-export type AppointmentType = 'training' | 'gt-assessment'
+export type SessionType =
+  | 'training-tabletop'
+  | 'training-digital'
+  | 'accelerate-rx'
+  | 'remote'
+  | 'gt'
 
-export type Appointment = Omit<Session, 'programId'> & { appointmentType: AppointmentType }
+// Back-compat alias if older imports reference AppointmentType
+export type AppointmentType = SessionType
+
+export type Appointment = Omit<Session, 'programId'> & { sessionType: SessionType }
