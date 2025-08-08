@@ -19,9 +19,18 @@ function Calendar() {
     type: "success" | "error";
   } | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "daily-grid">("daily-grid");
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().slice(0, 10)
-  );
+  // Helpers to handle local date input values (YYYY-MM-DD) without UTC shifts
+  const toLocalDateInputValue = (d: Date): string => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+  const fromLocalDateInputValue = (value: string): Date => {
+    const [y, m, d] = value.split("-").map(Number);
+    return new Date(y, (m || 1) - 1, d || 1);
+  };
+  const [selectedDate, setSelectedDate] = useState<string>(toLocalDateInputValue(new Date()));
 
   const showToast = (
     message: string,
@@ -60,14 +69,14 @@ function Calendar() {
   );
 
   const goPrevDay = () => {
-    const d = new Date(selectedDate);
+    const d = fromLocalDateInputValue(selectedDate);
     d.setDate(d.getDate() - 1);
-    setSelectedDate(d.toISOString().slice(0, 10));
+    setSelectedDate(toLocalDateInputValue(d));
   };
   const goNextDay = () => {
-    const d = new Date(selectedDate);
+    const d = fromLocalDateInputValue(selectedDate);
     d.setDate(d.getDate() + 1);
-    setSelectedDate(d.toISOString().slice(0, 10));
+    setSelectedDate(toLocalDateInputValue(d));
   };
 
   const GRID_CONFIG = {
@@ -163,9 +172,7 @@ function Calendar() {
                 className="px-2 py-1 border border-gray-300 rounded"
               />
               <button
-                onClick={() =>
-                  setSelectedDate(new Date().toISOString().slice(0, 10))
-                }
+                onClick={() => setSelectedDate(toLocalDateInputValue(new Date()))}
                 className="px-2 py-1 rounded border border-gray-300 hover:bg-gray-50"
               >
                 Today
@@ -370,7 +377,7 @@ function Calendar() {
         </div>
       ) : (
         <DailyGridView
-          date={new Date(selectedDate)}
+          date={fromLocalDateInputValue(selectedDate)}
           appointments={appointments}
           students={students}
           trainers={trainers}
