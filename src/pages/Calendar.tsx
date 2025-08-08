@@ -122,7 +122,7 @@ function Calendar() {
     businessStartMinutes: 10 * 60,
     businessEndMinutes: 19 * 60,
     incrementMinutes: 15,
-    laneWidthPx: 80,
+    laneWidthPx: 64,
     slotsPerType: {
       'training-tabletop': 10,
       'training-digital': 10,
