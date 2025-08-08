@@ -1,4 +1,20 @@
+import { listPrograms } from '@services/programs'
+import { listStudents } from '@services/students'
+import { listTrainers } from '@services/trainers'
+import { listAppointments } from '@services/appointments'
+
 function Dashboard() {
+  const programs = listPrograms()
+  const students = listStudents()
+  const trainers = listTrainers()
+  const appointments = listAppointments()
+  
+  const today = new Date().toDateString()
+  const todaysAppointments = appointments.filter(appointment => {
+    const appointmentDate = new Date(appointment.date).toDateString()
+    return appointmentDate === today && appointment.status === 'scheduled'
+  })
+
   return (
     <div className="space-y-6">
       <div className="border-b border-gray-200 pb-5">
@@ -22,7 +38,7 @@ function Dashboard() {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Total Programs</dt>
-                  <dd className="text-lg font-medium text-gray-900">12</dd>
+                  <dd className="text-lg font-medium text-gray-900">{programs.length}</dd>
                 </dl>
               </div>
             </div>
@@ -40,7 +56,7 @@ function Dashboard() {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Active Students</dt>
-                  <dd className="text-lg font-medium text-gray-900">48</dd>
+                  <dd className="text-lg font-medium text-gray-900">{students.length}</dd>
                 </dl>
               </div>
             </div>
@@ -58,7 +74,7 @@ function Dashboard() {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Trainers</dt>
-                  <dd className="text-lg font-medium text-gray-900">6</dd>
+                  <dd className="text-lg font-medium text-gray-900">{trainers.length}</dd>
                 </dl>
               </div>
             </div>
@@ -76,7 +92,7 @@ function Dashboard() {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Today's Sessions</dt>
-                  <dd className="text-lg font-medium text-gray-900">15</dd>
+                  <dd className="text-lg font-medium text-gray-900">{todaysAppointments.length}</dd>
                 </dl>
               </div>
             </div>
