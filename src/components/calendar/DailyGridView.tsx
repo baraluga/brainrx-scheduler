@@ -154,6 +154,9 @@ export default function DailyGridView({
     return list;
   }, [businessStartMinutes, businessEndMinutes, incrementMinutes]);
 
+  // Hide the first increment (e.g., 10:00) for visual symmetry with the hidden last increment
+  const timeSlotsNoFirst = useMemo(() => timeSlots.slice(1), [timeSlots])
+
   const tabletopPositioned = useMemo(() => {
     return placeInLanes(
       dayAppointments.filter((a) => getSessionType(a) === "training-tabletop"),
@@ -421,7 +424,7 @@ export default function DailyGridView({
                 }}
               />
             )}
-            {timeSlots.map((mins) => (
+          {timeSlotsNoFirst.map((mins) => (
               <div
                 key={mins}
                 className="absolute w-full border-t border-gray-200 text-[11px] text-gray-600 pr-2"
@@ -452,7 +455,7 @@ export default function DailyGridView({
               }}
             />
           )}
-          {timeSlots.map((mins) => (
+          {timeSlotsNoFirst.map((mins) => (
             <div
               key={mins}
               className="absolute left-0 right-0 border-t border-gray-100"
@@ -487,7 +490,7 @@ export default function DailyGridView({
               }}
             />
           )}
-          {timeSlots.map((mins) => (
+          {timeSlotsNoFirst.map((mins) => (
             <div
               key={mins}
               className="absolute left-0 right-0 border-t border-gray-100"
@@ -520,7 +523,7 @@ export default function DailyGridView({
               }}
             />
           )}
-          {timeSlots.map((mins) => (
+          {timeSlotsNoFirst.map((mins) => (
             <div
               key={mins}
               className="absolute left-0 right-0 border-t border-gray-100"
@@ -553,7 +556,7 @@ export default function DailyGridView({
               }}
             />
           )}
-          {timeSlots.map((mins) => (
+          {timeSlotsNoFirst.map((mins) => (
             <div
               key={mins}
               className="absolute left-0 right-0 border-t border-gray-100"
@@ -586,7 +589,7 @@ export default function DailyGridView({
               }}
             />
           )}
-          {timeSlots.map((mins) => (
+          {timeSlotsNoFirst.map((mins) => (
             <div
               key={mins}
               className="absolute left-0 right-0 border-t border-gray-100"
