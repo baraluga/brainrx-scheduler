@@ -11,37 +11,19 @@ const seedTrainers = (): string[] => {
       name: 'Dr. Sarah Johnson',
       email: 'sarah.johnson@brainrx.com',
       role: 'trainer',
-      specializations: ['Cognitive Training', 'Memory Enhancement'],
-      certifications: ['BrainRx Certified Trainer', 'Cognitive Training Specialist'],
-      availableHours: [
-        { dayOfWeek: 1, startTime: '09:00', endTime: '17:00' },
-        { dayOfWeek: 2, startTime: '09:00', endTime: '17:00' },
-        { dayOfWeek: 3, startTime: '09:00', endTime: '17:00' }
-      ]
+      canDoGtAssessments: true
     },
     {
       name: 'Michael Chen',
       email: 'michael.chen@brainrx.com',
       role: 'trainer',
-      specializations: ['Attention Training', 'Executive Function'],
-      certifications: ['BrainRx Certified Trainer', 'ADHD Specialist'],
-      availableHours: [
-        { dayOfWeek: 2, startTime: '10:00', endTime: '18:00' },
-        { dayOfWeek: 4, startTime: '10:00', endTime: '18:00' },
-        { dayOfWeek: 5, startTime: '10:00', endTime: '18:00' }
-      ]
+      canDoGtAssessments: false
     },
     {
       name: 'Lisa Rodriguez',
       email: 'lisa.rodriguez@brainrx.com',
       role: 'trainer',
-      specializations: ['Processing Speed', 'Auditory Processing'],
-      certifications: ['BrainRx Certified Trainer', 'Auditory Processing Specialist'],
-      availableHours: [
-        { dayOfWeek: 1, startTime: '08:00', endTime: '16:00' },
-        { dayOfWeek: 3, startTime: '08:00', endTime: '16:00' },
-        { dayOfWeek: 5, startTime: '08:00', endTime: '16:00' }
-      ]
+      canDoGtAssessments: true
     }
   ]
 

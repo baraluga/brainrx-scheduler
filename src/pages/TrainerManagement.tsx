@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Trainer } from '../types/index'
 import { listTrainers, createTrainer, updateTrainer, deleteTrainer, getTrainer } from '../services/trainers'
-import { getAvailabilitySummary } from '../utils/timeUtils'
+// Availability summary removed; trainers assumed available during business hours
 import TrainerForm from '../components/trainers/TrainerForm'
 import ConfirmDialog from '../components/common/ConfirmDialog'
 import EmptyState from '../components/common/EmptyState'
@@ -38,9 +38,7 @@ export default function TrainerManagement() {
     const query = debouncedSearchQuery.toLowerCase()
     return trainers.filter(trainer => 
       trainer.name.toLowerCase().includes(query) ||
-      trainer.email.toLowerCase().includes(query) ||
-      trainer.specializations.some(spec => spec.toLowerCase().includes(query)) ||
-      trainer.certifications.some(cert => cert.toLowerCase().includes(query))
+      trainer.email.toLowerCase().includes(query)
     )
   }, [trainers, debouncedSearchQuery])
 
@@ -130,10 +128,7 @@ export default function TrainerManagement() {
             {viewMode === 'add' ? 'Add New Trainer' : 'Edit Trainer'}
           </h2>
           <p className="mt-1 text-sm text-gray-600">
-            {viewMode === 'add' 
-              ? 'Create a new trainer profile with specializations and availability'
-              : 'Update the trainer information and availability'
-            }
+            {viewMode === 'add' ? 'Create a new trainer profile' : 'Update the trainer information'}
           </p>
         </div>
 
@@ -166,9 +161,7 @@ export default function TrainerManagement() {
           <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
             Trainers
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Manage trainer profiles, specializations, certifications, and availability.
-          </p>
+          <p className="mt-2 text-sm text-gray-600">Manage trainer profiles.</p>
         </div>
         <button
           onClick={handleAddTrainer}
@@ -196,7 +189,7 @@ export default function TrainerManagement() {
               id="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name, email, specializations, or certifications..."
+              placeholder="Search by name or email..."
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
@@ -230,18 +223,8 @@ export default function TrainerManagement() {
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Email
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Specializations
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Certifications
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Availability
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Updated
-                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">GT Assessments</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Updated</th>
                   <th scope="col" className="relative px-6 py-3">
                     <span className="sr-only">Actions</span>
                   </th>
@@ -258,54 +241,10 @@ export default function TrainerManagement() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {trainer.email}
                     </td>
-                    <td className="px-6 py-4">
-                      {trainer.specializations.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {trainer.specializations.slice(0, 2).map((specialization, index) => (
-                            <span
-                              key={index}
-                              className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-primary-100 text-primary-800"
-                            >
-                              {specialization}
-                            </span>
-                          ))}
-                          {trainer.specializations.length > 2 && (
-                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
-                              +{trainer.specializations.length - 2} more
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-sm text-gray-400">None</span>
-                      )}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {trainer.canDoGtAssessments ? 'Yes' : 'No'}
                     </td>
-                    <td className="px-6 py-4">
-                      {trainer.certifications.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {trainer.certifications.slice(0, 2).map((certification, index) => (
-                            <span
-                              key={index}
-                              className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800"
-                            >
-                              {certification}
-                            </span>
-                          ))}
-                          {trainer.certifications.length > 2 && (
-                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
-                              +{trainer.certifications.length - 2} more
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-sm text-gray-400">None</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {getAvailabilitySummary(trainer.availableHours)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(trainer.updatedAt)}
-                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(trainer.updatedAt)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                       <button
                         onClick={() => handleEditTrainer(trainer)}

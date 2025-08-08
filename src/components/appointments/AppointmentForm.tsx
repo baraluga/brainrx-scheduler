@@ -49,7 +49,7 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
 
   // Get available trainers based on appointment type
   const availableTrainers = formData.appointmentType === 'gt-assessment'
-    ? trainers.filter(trainer => trainer.certifications.some(cert => cert.toLowerCase().includes('gt assessment')))
+    ? trainers.filter(trainer => trainer.canDoGtAssessments)
     : trainers
 
   const validateField = (name: string, value: string): string | undefined => {

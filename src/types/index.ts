@@ -18,9 +18,7 @@ export interface Student extends User {
 
 export interface Trainer extends User {
   role: 'trainer'
-  specializations: string[]
-  certifications: string[]
-  availableHours: TimeSlot[]
+  canDoGtAssessments: boolean
 }
 
 export interface Session {
@@ -44,11 +42,7 @@ export interface SessionProgress {
   recommendations: string
 }
 
-export interface TimeSlot {
-  dayOfWeek: number
-  startTime: string
-  endTime: string
-}
+// TimeSlot removed; trainers are assumed available during business hours
 
 export interface CalendarEvent {
   id: string

@@ -1,20 +1,15 @@
 import { useState, useEffect, FormEvent } from 'react'
-import { Trainer, TimeSlot } from '../../types/index'
-import AvailabilityScheduler from './AvailabilityScheduler'
+import { Trainer } from '../../types/index'
 
 interface TrainerFormData {
   name: string
   email: string
-  specializations: string[]
-  certifications: string[]
-  availableHours: TimeSlot[]
+  canDoGtAssessments: boolean
 }
 
 interface TrainerFormErrors {
   name?: string
   email?: string
-  specializations?: string
-  certifications?: string
 }
 
 interface TrainerFormProps {
@@ -28,14 +23,10 @@ export default function TrainerForm({ initial, onSubmit, onCancel, submitLabel =
   const [formData, setFormData] = useState<TrainerFormData>({
     name: initial?.name || '',
     email: initial?.email || '',
-    specializations: initial?.specializations || [],
-    certifications: initial?.certifications || [],
-    availableHours: initial?.availableHours || []
+    canDoGtAssessments: initial?.canDoGtAssessments ?? false
   })
 
   const [errors, setErrors] = useState<TrainerFormErrors>({})
-  const [newSpecialization, setNewSpecialization] = useState('')
-  const [newCertification, setNewCertification] = useState('')
 
   const validateField = (name: string, value: string | string[]): string | undefined => {
     switch (name) {
@@ -53,14 +44,7 @@ export default function TrainerForm({ initial, onSubmit, onCancel, submitLabel =
         if (!emailRegex.test(value)) return 'Please enter a valid email address'
         break
       
-      case 'specializations':
-        if (!Array.isArray(value)) return undefined
-        if (value.length === 0) return 'At least one specialization is required'
-        break
-
-      case 'certifications':
-        if (!Array.isArray(value)) return undefined
-        if (value.length === 0) return 'At least one certification is required'
+      case 'canDoGtAssessments':
         break
     }
     return undefined
@@ -71,8 +55,7 @@ export default function TrainerForm({ initial, onSubmit, onCancel, submitLabel =
     
     newErrors.name = validateField('name', formData.name)
     newErrors.email = validateField('email', formData.email)
-    newErrors.specializations = validateField('specializations', formData.specializations)
-    newErrors.certifications = validateField('certifications', formData.certifications)
+    // no additional required fields
     
     setErrors(newErrors)
     return !Object.values(newErrors).some(error => error !== undefined)
@@ -85,61 +68,7 @@ export default function TrainerForm({ initial, onSubmit, onCancel, submitLabel =
     setErrors(prev => ({ ...prev, [field]: fieldError }))
   }
 
-  const handleAddSpecialization = () => {
-    const specialization = newSpecialization.trim()
-    if (!specialization) return
-    
-    if (formData.specializations.includes(specialization)) {
-      return // Don't add duplicates
-    }
-    
-    const updatedSpecializations = [...formData.specializations, specialization]
-    setFormData(prev => ({ ...prev, specializations: updatedSpecializations }))
-    setNewSpecialization('')
-    
-    // Validate specializations
-    const error = validateField('specializations', updatedSpecializations)
-    setErrors(prev => ({ ...prev, specializations: error }))
-  }
-
-  const handleRemoveSpecialization = (index: number) => {
-    const updatedSpecializations = formData.specializations.filter((_, i) => i !== index)
-    setFormData(prev => ({ ...prev, specializations: updatedSpecializations }))
-    
-    // Validate specializations
-    const error = validateField('specializations', updatedSpecializations)
-    setErrors(prev => ({ ...prev, specializations: error }))
-  }
-
-  const handleAddCertification = () => {
-    const certification = newCertification.trim()
-    if (!certification) return
-    
-    if (formData.certifications.includes(certification)) {
-      return // Don't add duplicates
-    }
-    
-    const updatedCertifications = [...formData.certifications, certification]
-    setFormData(prev => ({ ...prev, certifications: updatedCertifications }))
-    setNewCertification('')
-    
-    // Validate certifications
-    const error = validateField('certifications', updatedCertifications)
-    setErrors(prev => ({ ...prev, certifications: error }))
-  }
-
-  const handleRemoveCertification = (index: number) => {
-    const updatedCertifications = formData.certifications.filter((_, i) => i !== index)
-    setFormData(prev => ({ ...prev, certifications: updatedCertifications }))
-    
-    // Validate certifications
-    const error = validateField('certifications', updatedCertifications)
-    setErrors(prev => ({ ...prev, certifications: error }))
-  }
-
-  const handleAvailabilityChange = (availableHours: TimeSlot[]) => {
-    setFormData(prev => ({ ...prev, availableHours }))
-  }
+  // Removed specialization/certification/availability handlers
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -157,9 +86,7 @@ export default function TrainerForm({ initial, onSubmit, onCancel, submitLabel =
     const submitData = {
       name: formData.name.trim(),
       email: formData.email.trim(),
-      specializations: formData.specializations,
-      certifications: formData.certifications,
-      availableHours: formData.availableHours
+      canDoGtAssessments: Boolean(formData.canDoGtAssessments)
     }
 
     onSubmit(submitData)
@@ -229,117 +156,18 @@ export default function TrainerForm({ initial, onSubmit, onCancel, submitLabel =
         </div>
       </div>
 
-      {/* Specializations */}
+      {/* GT Assessment Capability */}
       <div className="space-y-4">
-        <h3 className="text-lg font-medium text-gray-900">Specializations *</h3>
-        
-        <div className="flex gap-2">
+        <h3 className="text-lg font-medium text-gray-900">Capabilities</h3>
+        <label className="flex items-center gap-2">
           <input
-            type="text"
-            value={newSpecialization}
-            onChange={(e) => setNewSpecialization(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSpecialization())}
-            placeholder="e.g., Cognitive Training, Memory Enhancement..."
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+            type="checkbox"
+            checked={formData.canDoGtAssessments}
+            onChange={(e) => setFormData(prev => ({ ...prev, canDoGtAssessments: e.target.checked }))}
+            className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
           />
-          <button
-            type="button"
-            onClick={handleAddSpecialization}
-            className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors"
-          >
-            Add
-          </button>
-        </div>
-
-        {errors.specializations && (
-          <p className="text-sm text-red-600">
-            {errors.specializations}
-          </p>
-        )}
-
-        {formData.specializations.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {formData.specializations.map((specialization, index) => (
-              <span
-                key={index}
-                className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-800 text-sm rounded-full"
-              >
-                {specialization}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveSpecialization(index)}
-                  className="ml-1 hover:text-primary-600 focus:outline-none"
-                  aria-label={`Remove ${specialization} specialization`}
-                >
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Certifications */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium text-gray-900">Certifications *</h3>
-        
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newCertification}
-            onChange={(e) => setNewCertification(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCertification())}
-            placeholder="e.g., BrainRx Certified, Neurofeedback Specialist..."
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-          <button
-            type="button"
-            onClick={handleAddCertification}
-            className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors"
-          >
-            Add
-          </button>
-        </div>
-
-        {errors.certifications && (
-          <p className="text-sm text-red-600">
-            {errors.certifications}
-          </p>
-        )}
-
-        {formData.certifications.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {formData.certifications.map((certification, index) => (
-              <span
-                key={index}
-                className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full"
-              >
-                {certification}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveCertification(index)}
-                  className="ml-1 hover:text-green-600 focus:outline-none"
-                  aria-label={`Remove ${certification} certification`}
-                >
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Availability */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium text-gray-900">Availability</h3>
-        <AvailabilityScheduler
-          availability={formData.availableHours}
-          onChange={handleAvailabilityChange}
-        />
+          <span className="text-sm text-gray-700">Can do GT Assessments</span>
+        </label>
       </div>
 
       <div className="flex gap-3 pt-4">

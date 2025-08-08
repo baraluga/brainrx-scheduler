@@ -1,7 +1,7 @@
 import { STORAGE_KEYS, loadCollection, saveCollection } from './storage'
 
 const SCHEMA_VERSION_KEY = 'brx_schema_version'
-const TARGET_VERSION = 2
+const TARGET_VERSION = 3
 
 export function runMigrations(): void {
   const raw = localStorage.getItem(SCHEMA_VERSION_KEY)
@@ -9,7 +9,11 @@ export function runMigrations(): void {
 
   if (currentVersion < 2) {
     migrateRemovePrograms()
-    localStorage.setItem(SCHEMA_VERSION_KEY, String(2))
+    localStorage.setItem(SCHEMA_VERSION_KEY, '2')
+  }
+  if (currentVersion < 3) {
+    migrateSimplifyTrainers()
+    localStorage.setItem(SCHEMA_VERSION_KEY, '3')
   }
 }
 
@@ -40,4 +44,20 @@ function migrateRemovePrograms(): void {
   }
 }
 
+
+function migrateSimplifyTrainers(): void {
+  try {
+    const trainers = loadCollection<any>(STORAGE_KEYS.trainers)
+    const simplified = trainers.map((t) => {
+      const canDoGtAssessments = Array.isArray(t?.certifications)
+        ? t.certifications.some((c: string) => String(c).toLowerCase().includes('gt assessment'))
+        : false
+      const { specializations, certifications, availableHours, ...rest } = t || {}
+      return { ...rest, canDoGtAssessments: Boolean(t?.canDoGtAssessments ?? canDoGtAssessments) }
+    })
+    saveCollection(STORAGE_KEYS.trainers, simplified)
+  } catch (error) {
+    console.error('Migration (simplify trainers) failed:', error)
+  }
+}
 
