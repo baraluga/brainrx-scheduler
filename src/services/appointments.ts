@@ -10,8 +10,12 @@ export function getAppointment(id: string): Appointment | undefined {
   return crud.getById<Appointment>(STORAGE_KEYS.appointments, id)
 }
 
-export function createAppointment(data: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'>): Appointment {
-  return crud.create<Appointment>(STORAGE_KEYS.appointments, data)
+export function createAppointment(data: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt' | 'status'> & { status?: Appointment['status'] }): Appointment {
+  const appointmentData = {
+    ...data,
+    status: data.status || 'scheduled' as const
+  }
+  return crud.create<Appointment>(STORAGE_KEYS.appointments, appointmentData)
 }
 
 export function updateAppointment(id: string, updates: Partial<Omit<Appointment, 'id' | 'createdAt'>>): Appointment {

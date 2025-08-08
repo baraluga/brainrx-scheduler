@@ -93,7 +93,8 @@ export default function TrainerManagement() {
   const handleFormSubmit = (data: Omit<Trainer, 'id' | 'createdAt' | 'updatedAt' | 'role'>) => {
     try {
       if (viewMode === 'add') {
-        const newTrainer = createTrainer(data)
+        const trainerData = { ...data, role: 'trainer' as const }
+        const newTrainer = createTrainer(trainerData)
         refreshTrainers()
         showToast('Trainer created successfully')
         console.log('Trainer created:', newTrainer)

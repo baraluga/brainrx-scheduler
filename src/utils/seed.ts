@@ -150,6 +150,7 @@ const seedAppointments = (studentIds: string[], trainerIds: string[], programIds
   const today = new Date()
   const appointments: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'>[] = [
     {
+      appointmentType: 'training',
       programId: programIds[0],
       studentId: studentIds[0],
       trainerId: trainerIds[0],
@@ -160,6 +161,7 @@ const seedAppointments = (studentIds: string[], trainerIds: string[], programIds
       notes: 'Initial assessment session'
     },
     {
+      appointmentType: 'gt-assessment',
       programId: programIds[1],
       studentId: studentIds[1],
       trainerId: trainerIds[1],
@@ -170,6 +172,7 @@ const seedAppointments = (studentIds: string[], trainerIds: string[], programIds
       notes: 'Follow-up session'
     },
     {
+      appointmentType: 'training',
       programId: programIds[2],
       studentId: studentIds[2],
       trainerId: trainerIds[2],
@@ -179,6 +182,7 @@ const seedAppointments = (studentIds: string[], trainerIds: string[], programIds
       status: 'scheduled'
     },
     {
+      appointmentType: 'training',
       programId: programIds[0],
       studentId: studentIds[3],
       trainerId: trainerIds[0],
@@ -189,6 +193,7 @@ const seedAppointments = (studentIds: string[], trainerIds: string[], programIds
       notes: 'Progress evaluation'
     },
     {
+      appointmentType: 'training',
       programId: programIds[3],
       studentId: studentIds[4],
       trainerId: trainerIds[1],
