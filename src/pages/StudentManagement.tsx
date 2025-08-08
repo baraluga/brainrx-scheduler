@@ -39,7 +39,7 @@ export default function StudentManagement() {
       const query = debouncedSearchQuery.toLowerCase()
       filtered = filtered.filter(student => {
         const name = (student.firstName || student.name || '').toLowerCase()
-        return name.includes(query) || student.email.toLowerCase().includes(query)
+        return name.includes(query)
       })
     }
 
@@ -243,9 +243,7 @@ export default function StudentManagement() {
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Student
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
-                  </th>
+                  
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Age
                   </th>
@@ -278,9 +276,7 @@ export default function StudentManagement() {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {student.email}
-                    </td>
+                    
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {calculateAge(student.dateOfBirth)} years
                     </td>

@@ -3,7 +3,7 @@ export interface User {
   name: string
   firstName?: string
   lastName?: string
-  email: string
+  email?: string
   role: 'admin' | 'trainer' | 'student'
   createdAt: string
   updatedAt: string
@@ -13,7 +13,6 @@ export interface Student extends User {
   role: 'student'
   dateOfBirth: string
   guardianName?: string
-  guardianEmail?: string
   guardianPhone?: string
   medicalNotes?: string
 }

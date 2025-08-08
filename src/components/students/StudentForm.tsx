@@ -4,10 +4,8 @@ import { Student } from '../../types/index'
 interface StudentFormData {
   firstName: string
   lastName: string
-  email: string
   dateOfBirth: string
   guardianName: string
-  guardianEmail: string
   guardianPhone: string
   medicalNotes: string
 }
@@ -15,9 +13,7 @@ interface StudentFormData {
 interface StudentFormErrors {
   firstName?: string
   lastName?: string
-  email?: string
   dateOfBirth?: string
-  guardianEmail?: string
   guardianPhone?: string
 }
 
@@ -32,10 +28,8 @@ export default function StudentForm({ initial, onSubmit, onCancel, submitLabel =
   const [formData, setFormData] = useState<StudentFormData>({
     firstName: initial?.firstName || (initial?.name?.split(' ')?.[0] ?? ''),
     lastName: initial?.lastName || (initial?.name?.split(' ').slice(1).join(' ') ?? ''),
-    email: initial?.email || '',
     dateOfBirth: initial?.dateOfBirth ? initial.dateOfBirth.split('T')[0] : '', // Convert from ISO to date input format
     guardianName: initial?.guardianName || '',
-    guardianEmail: initial?.guardianEmail || '',
     guardianPhone: initial?.guardianPhone || '',
     medicalNotes: initial?.medicalNotes || '',
   })
@@ -53,12 +47,6 @@ export default function StudentForm({ initial, onSubmit, onCancel, submitLabel =
         if (value.trim().length > 100) return 'Name must be less than 100 characters'
         break
       
-      case 'email':
-        if (!value.trim()) return 'Email is required'
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(value)) return 'Please enter a valid email address'
-        break
-      
       case 'dateOfBirth':
         if (!value.trim()) return 'Date of birth is required'
         const birthDate = new Date(value)
@@ -70,13 +58,6 @@ export default function StudentForm({ initial, onSubmit, onCancel, submitLabel =
         if (isNaN(birthDate.getTime())) return 'Please enter a valid date'
         if (finalAge < 3 || finalAge > 120) return 'Age must be between 3 and 120 years'
         if (birthDate > today) return 'Date of birth cannot be in the future'
-        break
-      
-      case 'guardianEmail':
-        if (value.trim()) {
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-          if (!emailRegex.test(value)) return 'Please enter a valid email address'
-        }
         break
       
       case 'guardianPhone':
@@ -96,9 +77,7 @@ export default function StudentForm({ initial, onSubmit, onCancel, submitLabel =
     
     newErrors.firstName = validateField('firstName', formData.firstName)
     newErrors.lastName = validateField('lastName', formData.lastName)
-    newErrors.email = validateField('email', formData.email)
     newErrors.dateOfBirth = validateField('dateOfBirth', formData.dateOfBirth)
-    newErrors.guardianEmail = validateField('guardianEmail', formData.guardianEmail)
     newErrors.guardianPhone = validateField('guardianPhone', formData.guardianPhone)
     
     setErrors(newErrors)
@@ -131,10 +110,8 @@ export default function StudentForm({ initial, onSubmit, onCancel, submitLabel =
       name: fullName,
       firstName: formData.firstName.trim(),
       lastName: formData.lastName.trim() || undefined,
-      email: formData.email.trim(),
       dateOfBirth: new Date(formData.dateOfBirth).toISOString(),
       guardianName: formData.guardianName.trim() || undefined,
-      guardianEmail: formData.guardianEmail.trim() || undefined,
       guardianPhone: formData.guardianPhone.trim() || undefined,
       medicalNotes: formData.medicalNotes.trim() || undefined
     }
@@ -206,27 +183,7 @@ export default function StudentForm({ initial, onSubmit, onCancel, submitLabel =
           </div>
         </div>
 
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-            Email *
-          </label>
-          <input
-            type="email"
-            id="email"
-            value={formData.email}
-            onChange={(e) => handleFieldChange('email', e.target.value)}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-              errors.email ? 'border-red-500' : 'border-gray-300'
-            }`}
-            aria-invalid={!!errors.email}
-            aria-describedby={errors.email ? 'email-error' : undefined}
-          />
-          {errors.email && (
-            <p id="email-error" className="mt-1 text-sm text-red-600">
-              {errors.email}
-            </p>
-          )}
-        </div>
+        
 
         <div>
           <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 mb-2">
@@ -268,27 +225,7 @@ export default function StudentForm({ initial, onSubmit, onCancel, submitLabel =
           />
         </div>
 
-        <div>
-          <label htmlFor="guardianEmail" className="block text-sm font-medium text-gray-700 mb-2">
-            Guardian Email
-          </label>
-          <input
-            type="email"
-            id="guardianEmail"
-            value={formData.guardianEmail}
-            onChange={(e) => handleFieldChange('guardianEmail', e.target.value)}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-              errors.guardianEmail ? 'border-red-500' : 'border-gray-300'
-            }`}
-            aria-invalid={!!errors.guardianEmail}
-            aria-describedby={errors.guardianEmail ? 'guardianEmail-error' : undefined}
-          />
-          {errors.guardianEmail && (
-            <p id="guardianEmail-error" className="mt-1 text-sm text-red-600">
-              {errors.guardianEmail}
-            </p>
-          )}
-        </div>
+        
 
         <div>
           <label htmlFor="guardianPhone" className="block text-sm font-medium text-gray-700 mb-2">
