@@ -3,7 +3,6 @@ import { generateId as utilGenerateId } from './index'
 export const STORAGE_KEYS = {
   students: 'brx_students',
   trainers: 'brx_trainers',
-  programs: 'brx_programs',
   appointments: 'brx_appointments'
 } as const
 

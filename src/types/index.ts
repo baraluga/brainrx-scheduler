@@ -14,7 +14,6 @@ export interface Student extends User {
   guardianEmail?: string
   guardianPhone?: string
   medicalNotes?: string
-  programs: Program[]
 }
 
 export interface Trainer extends User {
@@ -24,24 +23,8 @@ export interface Trainer extends User {
   availableHours: TimeSlot[]
 }
 
-export interface Program {
-  id: string
-  name: string
-  description: string
-  duration: number
-  difficulty: 'beginner' | 'intermediate' | 'advanced'
-  targetAge: {
-    min: number
-    max: number
-  }
-  sessions: Session[]
-  createdAt: string
-  updatedAt: string
-}
-
 export interface Session {
   id: string
-  programId: string
   studentId: string
   trainerId: string
   date: string
@@ -79,4 +62,4 @@ export interface CalendarEvent {
 
 export type AppointmentType = 'training' | 'gt-assessment'
 
-export type Appointment = Session & { appointmentType: AppointmentType }
+export type Appointment = Omit<Session, 'programId'> & { appointmentType: AppointmentType }

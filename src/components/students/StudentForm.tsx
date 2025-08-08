@@ -1,6 +1,5 @@
 import { useState, useEffect, FormEvent } from 'react'
-import { Student, Program } from '../../types/index'
-import { listPrograms } from '../../services/programs'
+import { Student } from '../../types/index'
 
 interface StudentFormData {
   name: string
@@ -10,7 +9,6 @@ interface StudentFormData {
   guardianEmail: string
   guardianPhone: string
   medicalNotes: string
-  programs: Program[]
 }
 
 interface StudentFormErrors {
@@ -29,7 +27,6 @@ interface StudentFormProps {
 }
 
 export default function StudentForm({ initial, onSubmit, onCancel, submitLabel = 'Save Student' }: StudentFormProps) {
-  const [availablePrograms] = useState<Program[]>(listPrograms())
   const [formData, setFormData] = useState<StudentFormData>({
     name: initial?.name || '',
     email: initial?.email || '',
@@ -38,11 +35,9 @@ export default function StudentForm({ initial, onSubmit, onCancel, submitLabel =
     guardianEmail: initial?.guardianEmail || '',
     guardianPhone: initial?.guardianPhone || '',
     medicalNotes: initial?.medicalNotes || '',
-    programs: initial?.programs || []
   })
 
   const [errors, setErrors] = useState<StudentFormErrors>({})
-  const [programSearchTerm, setProgramSearchTerm] = useState('')
 
   const validateField = (name: string, value: string): string | undefined => {
     switch (name) {
@@ -111,15 +106,6 @@ export default function StudentForm({ initial, onSubmit, onCancel, submitLabel =
     setErrors(prev => ({ ...prev, [field]: fieldError }))
   }
 
-  const handleProgramToggle = (program: Program) => {
-    setFormData(prev => ({
-      ...prev,
-      programs: prev.programs.some(p => p.id === program.id)
-        ? prev.programs.filter(p => p.id !== program.id)
-        : [...prev.programs, program]
-    }))
-  }
-
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     
@@ -140,8 +126,7 @@ export default function StudentForm({ initial, onSubmit, onCancel, submitLabel =
       guardianName: formData.guardianName.trim() || undefined,
       guardianEmail: formData.guardianEmail.trim() || undefined,
       guardianPhone: formData.guardianPhone.trim() || undefined,
-      medicalNotes: formData.medicalNotes.trim() || undefined,
-      programs: formData.programs
+      medicalNotes: formData.medicalNotes.trim() || undefined
     }
 
     onSubmit(submitData)
@@ -159,10 +144,6 @@ export default function StudentForm({ initial, onSubmit, onCancel, submitLabel =
   }, [])
 
   const isValid = !Object.values(errors).some(error => error !== undefined)
-
-  const filteredPrograms = availablePrograms.filter(program =>
-    program.name.toLowerCase().includes(programSearchTerm.toLowerCase())
-  )
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -315,61 +296,7 @@ export default function StudentForm({ initial, onSubmit, onCancel, submitLabel =
         />
       </div>
 
-      {/* Program Selection */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium text-gray-900">Programs</h3>
-        
-        {availablePrograms.length > 0 ? (
-          <>
-            {availablePrograms.length > 5 && (
-              <div>
-                <input
-                  type="text"
-                  placeholder="Search programs..."
-                  value={programSearchTerm}
-                  onChange={(e) => setProgramSearchTerm(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-            )}
-            
-            <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3">
-              {filteredPrograms.length > 0 ? (
-                filteredPrograms.map((program) => (
-                  <label key={program.id} className="flex items-start space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                    <input
-                      type="checkbox"
-                      checked={formData.programs.some(p => p.id === program.id)}
-                      onChange={() => handleProgramToggle(program)}
-                      className="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900">{program.name}</div>
-                      <div className="text-xs text-gray-500">
-                        {program.difficulty} • {program.duration} min • Ages {program.targetAge.min}–{program.targetAge.max}
-                      </div>
-                    </div>
-                  </label>
-                ))
-              ) : (
-                <p className="text-sm text-gray-500 text-center py-4">
-                  No programs found matching "{programSearchTerm}"
-                </p>
-              )}
-            </div>
-            
-            {formData.programs.length > 0 && (
-              <div className="text-sm text-gray-600">
-                Selected {formData.programs.length} program{formData.programs.length !== 1 ? 's' : ''}
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="text-sm text-gray-500 bg-gray-50 p-4 rounded-md">
-            No programs available. Create some programs first to assign them to students.
-          </div>
-        )}
-      </div>
+      {/* Program Selection removed */}
 
       <div className="flex gap-3 pt-4">
         <button

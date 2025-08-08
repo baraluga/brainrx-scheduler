@@ -1,14 +1,13 @@
 # BrainRX Scheduler
 
-A modern React + TypeScript application for managing brain training programs, students, trainers, and scheduling sessions.
+A modern React + TypeScript application for managing students, trainers, and scheduling appointments.
 
 ## Features
 
-- **Dashboard**: Overview of programs, students, trainers, and today's sessions
-- **Program Management**: Create and manage brain training programs
-- **Student Management**: Track student profiles, progress, and enrollment
+- **Dashboard**: Overview of students, trainers, and today's appointments
+- **Student Management**: Track student profiles and enrollment
 - **Trainer Management**: Manage trainer profiles, schedules, and specializations
-- **Calendar & Scheduling**: View and manage training session schedules
+- **Calendar & Scheduling**: View and manage appointment schedules
 
 ## Tech Stack
 
@@ -62,11 +61,10 @@ src/
 │   ├── Layout.tsx      # Main layout with navigation
 │   └── Navigation.tsx  # Navigation component
 ├── pages/              # Page-level components
-│   ├── Dashboard.tsx   # Dashboard overview
-│   ├── Programs.tsx    # Program management
-│   ├── Students.tsx    # Student management
-│   ├── Trainers.tsx    # Trainer management
-│   └── Calendar.tsx    # Calendar and scheduling
+│   ├── Dashboard.tsx           # Dashboard overview
+│   ├── StudentManagement.tsx   # Student management
+│   ├── Trainers.tsx            # Trainer management
+│   └── Calendar.tsx            # Calendar and scheduling
 ├── types/              # TypeScript type definitions
 │   └── index.ts        # Application types and interfaces
 ├── utils/              # Utility functions and helpers

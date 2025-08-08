@@ -1,8 +1,7 @@
 import { useState, useMemo } from 'react'
-import { Appointment, Student, Program, Trainer } from '../types/index'
+import { Appointment, Student, Trainer } from '../types/index'
 import { listAppointments, createAppointment } from '../services/appointments'
 import { listStudents } from '../services/students'
-import { listPrograms } from '../services/programs'
 import { listTrainers } from '../services/trainers'
 import AppointmentForm from '../components/appointments/AppointmentForm'
 import Modal from '../components/common/Modal'
@@ -10,7 +9,6 @@ import Modal from '../components/common/Modal'
 function Calendar() {
   const [appointments, setAppointments] = useState<Appointment[]>(listAppointments())
   const [students] = useState<Student[]>(listStudents())
-  const [programs] = useState<Program[]>(listPrograms())
   const [trainers] = useState<Trainer[]>(listTrainers())
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [toast, setToast] = useState<{
@@ -66,10 +64,6 @@ function Calendar() {
 
   const getStudentName = (studentId: string) => {
     return students.find(s => s.id === studentId)?.name || 'Unknown Student'
-  }
-
-  const getProgramName = (programId: string) => {
-    return programs.find(p => p.id === programId)?.name || 'Unknown Program'
   }
 
   const getTrainerName = (trainerId: string) => {
@@ -179,9 +173,7 @@ function Calendar() {
                             {appointment.status}
                           </span>
                         </div>
-                        <div className="mt-1 text-sm text-gray-600">
-                          <strong>{getProgramName(appointment.programId)}</strong> — {getStudentName(appointment.studentId)}
-                        </div>
+                        <div className="mt-1 text-sm text-gray-600">{getStudentName(appointment.studentId)}</div>
                         <div className="text-xs text-gray-500">
                           Trainer: {getTrainerName(appointment.trainerId)}
                         </div>

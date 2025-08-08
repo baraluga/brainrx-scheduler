@@ -1,11 +1,9 @@
-import { listPrograms } from '../services/programs'
 import { listStudents } from '../services/students'
 import { listTrainers } from '../services/trainers'
 import { listAppointments } from '../services/appointments'
 import { Appointment } from '../types/index'
 
 function Dashboard() {
-  const programs = listPrograms()
   const students = listStudents()
   const trainers = listTrainers()
   const appointments = listAppointments()
@@ -23,29 +21,11 @@ function Dashboard() {
           Dashboard
         </h2>
         <p className="mt-2 text-sm text-gray-600">
-          Welcome to BrainRX Scheduler. Manage your brain training programs, students, and trainers all in one place.
+          Welcome to BrainRX Scheduler. Manage your students, trainers, and appointments all in one place.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-primary-500 rounded-md flex items-center justify-center">
-                  <span className="text-white text-sm font-medium">P</span>
-                </div>
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Programs</dt>
-                  <dd className="text-lg font-medium text-gray-900">{programs.length}</dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
@@ -108,7 +88,6 @@ function Dashboard() {
             <div className="flex flex-wrap gap-3">
               <button className="btn-primary">Schedule Session</button>
               <button className="btn-secondary">Add Student</button>
-              <button className="btn-secondary">Create Program</button>
               <button className="btn-secondary">View Reports</button>
             </div>
           </div>

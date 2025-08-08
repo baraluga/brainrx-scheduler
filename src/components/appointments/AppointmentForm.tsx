@@ -1,7 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react'
-import { Appointment, AppointmentType, Student, Program, Trainer } from '../../types/index'
+import { Appointment, AppointmentType, Student, Trainer } from '../../types/index'
 import { listStudents } from '../../services/students'
-import { listPrograms } from '../../services/programs'
 import { listTrainers } from '../../services/trainers'
 import { validateTimeSlot } from '../../utils/validation'
 
@@ -11,7 +10,6 @@ interface AppointmentFormData {
   startTime: string
   endTime: string
   studentId: string
-  programId: string
   trainerId: string
   notes: string
 }
@@ -23,7 +21,6 @@ interface AppointmentFormErrors {
   endTime?: string
   timeSlot?: string
   studentId?: string
-  programId?: string
   trainerId?: string
 }
 
@@ -36,7 +33,6 @@ interface AppointmentFormProps {
 
 export default function AppointmentForm({ initial, onSubmit, onCancel, submitLabel = 'Create Appointment' }: AppointmentFormProps) {
   const [students] = useState<Student[]>(listStudents())
-  const [programs] = useState<Program[]>(listPrograms())
   const [trainers] = useState<Trainer[]>(listTrainers())
   
   const [formData, setFormData] = useState<AppointmentFormData>({
@@ -45,7 +41,6 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
     startTime: initial?.startTime || '',
     endTime: initial?.endTime || '',
     studentId: initial?.studentId || '',
-    programId: initial?.programId || '',
     trainerId: initial?.trainerId || '',
     notes: initial?.notes || ''
   })
@@ -85,10 +80,6 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
         if (!value) return 'Student is required'
         break
       
-      case 'programId':
-        if (!value) return 'Program is required'
-        break
-      
       case 'trainerId':
         if (!value) return 'Trainer is required'
         break
@@ -114,7 +105,6 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
     newErrors.startTime = validateField('startTime', formData.startTime)
     newErrors.endTime = validateField('endTime', formData.endTime)
     newErrors.studentId = validateField('studentId', formData.studentId)
-    newErrors.programId = validateField('programId', formData.programId)
     newErrors.trainerId = validateField('trainerId', formData.trainerId)
     
     // Validate time slot
@@ -162,7 +152,6 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
       startTime: formData.startTime,
       endTime: formData.endTime,
       studentId: formData.studentId,
-      programId: formData.programId,
       trainerId: formData.trainerId,
       notes: formData.notes.trim() || undefined,
       progress: undefined
@@ -330,34 +319,7 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
         )}
       </div>
 
-      {/* Program */}
-      <div>
-        <label htmlFor="programId" className="block text-sm font-medium text-gray-700 mb-2">
-          Program *
-        </label>
-        <select
-          id="programId"
-          value={formData.programId}
-          onChange={(e) => handleFieldChange('programId', e.target.value)}
-          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-            errors.programId ? 'border-red-500' : 'border-gray-300'
-          }`}
-          aria-invalid={!!errors.programId}
-          aria-describedby={errors.programId ? 'programId-error' : undefined}
-        >
-          <option value="">Select a program</option>
-          {programs.map((program) => (
-            <option key={program.id} value={program.id}>
-              {program.name}
-            </option>
-          ))}
-        </select>
-        {errors.programId && (
-          <p id="programId-error" className="mt-1 text-sm text-red-600">
-            {errors.programId}
-          </p>
-        )}
-      </div>
+      {/* Program removed */}
 
       {/* Trainer */}
       <div>
