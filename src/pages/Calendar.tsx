@@ -432,7 +432,7 @@ function Calendar() {
             appointments={appointments}
             students={students}
             trainers={trainers}
-            config={GRID_CONFIG}
+            config={{ ...GRID_CONFIG, nowOffsetMinutes: 600 }}
           />
         </div>
       )}

@@ -1,13 +1,14 @@
 import { useMemo } from "react";
 import { Appointment, SessionType, Student, Trainer } from "../../types/index";
 
-type DailyGridConfig = {
-  businessStartMinutes: number; // minutes from midnight (e.g., 10:00 → 600)
-  businessEndMinutes: number; // minutes from midnight (e.g., 19:00 → 1140)
-  incrementMinutes: number; // 15
-  slotsPerType: Record<SessionType, number>;
-  laneWidthPx?: number; // default 120
-};
+ type DailyGridConfig = {
+   businessStartMinutes: number; // minutes from midnight (e.g., 10:00 → 600)
+   businessEndMinutes: number; // minutes from midnight (e.g., 19:00 → 1140)
+   incrementMinutes: number; // 15
+   slotsPerType: Record<SessionType, number>;
+   laneWidthPx?: number; // default 120
+   nowOffsetMinutes?: number; // dev/demo: offset current time indicator
+ };
 
 type DailyGridViewProps = {
   date: Date;
@@ -115,7 +116,8 @@ export default function DailyGridView({
     businessEndMinutes,
     incrementMinutes,
     slotsPerType,
-    laneWidthPx,
+     laneWidthPx,
+     nowOffsetMinutes,
   } = config;
 
   const dateKey = date.toDateString();
@@ -206,19 +208,25 @@ export default function DailyGridView({
     [trainers]
   );
 
-  const nowLineTop = (() => {
+   const nowLineTop = (() => {
     const today = new Date();
     if (today.toDateString() !== dateKey) return null;
-    const nowMins = today.getHours() * 60 + today.getMinutes();
+     let nowMins = today.getHours() * 60 + today.getMinutes();
+     if (typeof nowOffsetMinutes === 'number') {
+       nowMins = (nowMins + nowOffsetMinutes + 1440) % 1440;
+     }
     if (nowMins < businessStartMinutes || nowMins > businessEndMinutes)
       return null;
     return ((nowMins - businessStartMinutes) / incrementMinutes) * rowHeight;
   })();
 
-  const currentSlotTop = (() => {
+   const currentSlotTop = (() => {
     const today = new Date();
     if (today.toDateString() !== dateKey) return null;
-    const nowMins = today.getHours() * 60 + today.getMinutes();
+     let nowMins = today.getHours() * 60 + today.getMinutes();
+     if (typeof nowOffsetMinutes === 'number') {
+       nowMins = (nowMins + nowOffsetMinutes + 1440) % 1440;
+     }
     if (nowMins < businessStartMinutes || nowMins > businessEndMinutes)
       return null;
     const slotIndex = Math.floor(
@@ -397,6 +405,12 @@ export default function DailyGridView({
         {/* Body: time column + two canvases */}
         <div>
           <div className="relative" style={{ height: gridHeight }}>
+            {nowLineTop !== null && (
+              <div
+                className="pointer-events-none absolute left-0 right-0 h-0.5 bg-red-500/60"
+                style={{ top: nowLineTop }}
+              />
+            )}
             {currentSlotTop !== null && (
               <div
                 className="absolute left-0 right-0"
@@ -454,7 +468,7 @@ export default function DailyGridView({
           {/* Now line */}
           {nowLineTop !== null && (
             <div
-              className="absolute left-0 right-0 border-t-2 border-red-500"
+              className="pointer-events-none absolute left-0 right-0 h-0.5 bg-red-500/60"
               style={{ top: nowLineTop }}
             />
           )}
@@ -487,7 +501,7 @@ export default function DailyGridView({
           {digitalPositioned.map(renderAppt)}
           {nowLineTop !== null && (
             <div
-              className="absolute left-0 right-0 border-t-2 border-red-500"
+              className="pointer-events-none absolute left-0 right-0 h-0.5 bg-red-500/60"
               style={{ top: nowLineTop }}
             />
           )}
@@ -520,7 +534,7 @@ export default function DailyGridView({
           {arxPositioned.map(renderAppt)}
           {nowLineTop !== null && (
             <div
-              className="absolute left-0 right-0 border-t-2 border-red-500"
+              className="pointer-events-none absolute left-0 right-0 h-0.5 bg-red-500/60"
               style={{ top: nowLineTop }}
             />
           )}
@@ -553,7 +567,7 @@ export default function DailyGridView({
           {remotePositioned.map(renderAppt)}
           {nowLineTop !== null && (
             <div
-              className="absolute left-0 right-0 border-t-2 border-red-500"
+              className="pointer-events-none absolute left-0 right-0 h-0.5 bg-red-500/60"
               style={{ top: nowLineTop }}
             />
           )}
@@ -586,7 +600,7 @@ export default function DailyGridView({
           {gtPositioned.map(renderAppt)}
           {nowLineTop !== null && (
             <div
-              className="absolute left-0 right-0 border-t-2 border-red-500"
+              className="pointer-events-none absolute left-0 right-0 h-0.5 bg-red-500/60 animate-pulse"
               style={{ top: nowLineTop }}
             />
           )}
