@@ -289,7 +289,7 @@ export default function DailyGridView({
         }}
       >
         {/* Two-level header */}
-        <div className="border-b border-gray-200" />
+        <div className="border-b border-r border-gray-200 sticky left-0 z-20 bg-white" />
         <div className="border-b border-gray-200 text-center font-semibold py-2">
           Training (Table-top)
         </div>
@@ -307,7 +307,7 @@ export default function DailyGridView({
         </div>
 
         {/* Second header row with slot numbers */}
-        <div className="border-b border-gray-200 bg-gray-50 text-xs text-gray-600 py-2 px-3">
+        <div className="border-b border-r border-gray-200 bg-gray-50 text-xs text-gray-600 py-2 px-3 sticky left-0 z-20">
           Time
         </div>
         <div className="border-b border-gray-200 bg-gray-50">
@@ -402,8 +402,8 @@ export default function DailyGridView({
           </div>
         </div>
 
-        {/* Body: time column + two canvases */}
-        <div>
+        {/* Body: time column + canvases */}
+        <div className="sticky left-0 z-10 bg-white border-r border-gray-200">
           <div className="relative" style={{ height: gridHeight }}>
             {nowLineTop !== null && (
               <div
