@@ -10,8 +10,12 @@ export function getStudent(id: string): Student | undefined {
   return crud.getById<Student>(STORAGE_KEYS.students, id)
 }
 
-export function createStudent(data: Omit<Student, 'id' | 'createdAt' | 'updatedAt'>): Student {
-  return crud.create<Student>(STORAGE_KEYS.students, data)
+export function createStudent(data: Omit<Student, 'id' | 'createdAt' | 'updatedAt' | 'role'>): Student {
+  const studentData = {
+    ...data,
+    role: 'student' as const
+  }
+  return crud.create<Student>(STORAGE_KEYS.students, studentData)
 }
 
 export function updateStudent(id: string, updates: Partial<Omit<Student, 'id' | 'createdAt'>>): Student {
