@@ -10,8 +10,12 @@ export function getProgram(id: string): Program | undefined {
   return crud.getById<Program>(STORAGE_KEYS.programs, id)
 }
 
-export function createProgram(data: Omit<Program, 'id' | 'createdAt' | 'updatedAt'>): Program {
-  return crud.create<Program>(STORAGE_KEYS.programs, data)
+export function createProgram(data: Omit<Program, 'id' | 'createdAt' | 'updatedAt' | 'sessions'> & { sessions?: Program['sessions'] }): Program {
+  const programData = {
+    ...data,
+    sessions: data.sessions || []
+  }
+  return crud.create<Program>(STORAGE_KEYS.programs, programData)
 }
 
 export function updateProgram(id: string, updates: Partial<Omit<Program, 'id' | 'createdAt'>>): Program {
