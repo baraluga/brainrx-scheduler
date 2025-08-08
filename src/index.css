@@ -26,3 +26,15 @@
     @apply bg-white hover:bg-gray-50 text-ink-700 px-4 py-2 rounded-lg border border-gray-200 transition-colors duration-200 shadow-sm;
   }
 }
+
+/* Live view subtle animated gradient */
+@keyframes live-gradient-x {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.live-gradient {
+  background: linear-gradient(90deg, rgba(62,165,224,0.08), rgba(62,165,224,0.18), rgba(62,165,224,0.08));
+  background-size: 200% 100%;
+  animation: live-gradient-x 8s ease-in-out infinite;
+}

@@ -46,15 +46,19 @@ export default function PublicDailyView() {
   // No date controls – live view always shows today
 
   return (
-    <div className="min-h-screen bg-warm-50">
+    <div className="min-h-screen bg-warm-50 live-gradient">
       <div className="max-w-[1600px] mx-auto px-8 py-12">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-ink-900 mb-6">
-          Center Schedule for {new Date(selectedDate).toLocaleDateString()}
-        </h1>
-        <div
-          className="bg-white rounded-xl p-6 md:p-8"
-          style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}
-        >
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-ink-900 flex items-center gap-3">
+            <span className="inline-flex items-center justify-center w-2 h-2 rounded-full bg-green-500 animate-pulse shadow" />
+            Center Schedule for {new Date(selectedDate).toLocaleDateString()}
+          </h1>
+          <span className="text-xs text-ink-500 hidden sm:inline-flex items-center gap-2">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 animate-ping" />
+            Live updating • Refresh for latest
+          </span>
+        </div>
+        <div className="bg-white/90 backdrop-blur rounded-2xl p-6 md:p-8 shadow-[0_8px_30px_rgba(0,0,0,0.06)] ring-1 ring-primary-100">
           <DailyGridView
             date={toDate(selectedDate)}
             appointments={appointments}
