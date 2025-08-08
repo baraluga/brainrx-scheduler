@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { Appointment, Student, Trainer } from "../types/index";
 import { listAppointments, createAppointment } from "../services/appointments";
 import { listStudents } from "../services/students";
@@ -14,6 +14,8 @@ function Calendar() {
   const [students] = useState<Student[]>(listStudents());
   const [trainers] = useState<Trainer[]>(listTrainers());
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const gridContainerRef = useRef<HTMLDivElement | null>(null)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error";
@@ -78,6 +80,43 @@ function Calendar() {
     d.setDate(d.getDate() + 1);
     setSelectedDate(toLocalDateInputValue(d));
   };
+
+  // Fullscreen controls
+  const enterFullscreen = async () => {
+    const el: any = gridContainerRef.current
+    if (!el) return
+    if (el.requestFullscreen) {
+      await el.requestFullscreen()
+    } else if (el.webkitRequestFullscreen) {
+      el.webkitRequestFullscreen()
+    } else if (el.msRequestFullscreen) {
+      el.msRequestFullscreen()
+    }
+  }
+  const exitFullscreen = async () => {
+    const doc: any = document
+    if (document.exitFullscreen) {
+      await document.exitFullscreen()
+    } else if (doc.webkitExitFullscreen) {
+      doc.webkitExitFullscreen()
+    } else if (doc.msExitFullscreen) {
+      doc.msExitFullscreen()
+    }
+  }
+  useEffect(() => {
+    const onChange = () => {
+      const anyDoc: any = document
+      const fsEl = document.fullscreenElement || anyDoc.webkitFullscreenElement || anyDoc.msFullscreenElement
+      setIsFullscreen(fsEl === gridContainerRef.current)
+    }
+    document.addEventListener('fullscreenchange', onChange)
+    // Safari/WebKit
+    document.addEventListener('webkitfullscreenchange', onChange as any)
+    return () => {
+      document.removeEventListener('fullscreenchange', onChange)
+      document.removeEventListener('webkitfullscreenchange', onChange as any)
+    }
+  }, [])
 
   const GRID_CONFIG = {
     businessStartMinutes: 10 * 60,
@@ -182,6 +221,13 @@ function Calendar() {
                 className="px-2 py-1 rounded border border-gray-300 hover:bg-gray-50"
               >
                 ▶
+              </button>
+              <button
+                onClick={() => (isFullscreen ? exitFullscreen() : enterFullscreen())}
+                className="ml-2 px-2 py-1 rounded border border-gray-300 hover:bg-gray-50"
+                title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+              >
+                {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
               </button>
             </div>
           )}
@@ -376,13 +422,24 @@ function Calendar() {
           )}
         </div>
       ) : (
-        <DailyGridView
-          date={fromLocalDateInputValue(selectedDate)}
-          appointments={appointments}
-          students={students}
-          trainers={trainers}
-          config={GRID_CONFIG}
-        />
+        <div ref={gridContainerRef} className="relative">
+          {isFullscreen && (
+            <button
+              onClick={exitFullscreen}
+              className="absolute top-2 right-2 z-10 px-2 py-1 rounded bg-white border border-gray-300 shadow hover:bg-gray-50"
+              title="Exit Fullscreen"
+            >
+              ✕
+            </button>
+          )}
+          <DailyGridView
+            date={fromLocalDateInputValue(selectedDate)}
+            appointments={appointments}
+            students={students}
+            trainers={trainers}
+            config={GRID_CONFIG}
+          />
+        </div>
       )}
 
       {/* Create Appointment Modal */}
