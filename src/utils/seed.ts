@@ -166,7 +166,7 @@ const seedAug9_2025IfLight = (): void => {
   const existing = listAppointments().filter(a => new Date(a.date).toDateString() === targetKey)
   const existingCount = existing.length
   // If we already have a busy day, skip. Otherwise, top it up to be dense.
-  const MIN_TARGET_COUNT = 80
+  const MIN_TARGET_COUNT = 45
   if (existingCount >= MIN_TARGET_COUNT) return
 
   const students = listStudents()
@@ -207,17 +207,22 @@ const seedAug9_2025IfLight = (): void => {
   }
 
   const appts: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'>[] = []
+  const MAX_TRAINING_TO_ADD = 40
+  const MAX_GT_TO_ADD = 3
+  let addedTraining = 0
+  let addedGT = 0
 
   // Generate a rich set of Training appointments across the day
-  for (let lane = 0; lane < 10; lane++) {
+  for (let lane = 0; lane < 10 && addedTraining < MAX_TRAINING_TO_ADD; lane++) {
     let cursor = BUSINESS_START + lane * 6 // stagger lanes a bit
-    while (cursor < BUSINESS_END - 30) {
+    while (cursor < BUSINESS_END - 30 && addedTraining < MAX_TRAINING_TO_ADD) {
       const durChoices = [30, 45, 60, 75, 90, 105, 120]
       const duration = durChoices[Math.floor(Math.random() * durChoices.length)]
       const roundedDuration = duration - (duration % INCREMENT)
       const safeDuration = clamp(roundedDuration, 30, 120)
       if (cursor + safeDuration > BUSINESS_END) break
       appts.push(createBlock(cursor, safeDuration, 'training'))
+      addedTraining++
       // gap between 15-45 minutes
       const gapChoices = [15, 15, 30, 30, 45]
       const gap = gapChoices[Math.floor(Math.random() * gapChoices.length)]
@@ -226,15 +231,16 @@ const seedAug9_2025IfLight = (): void => {
   }
 
   // Generate GT Assessment appointments (fewer lanes)
-  for (let lane = 0; lane < 4; lane++) {
+  for (let lane = 0; lane < 4 && addedGT < MAX_GT_TO_ADD; lane++) {
     let cursor = BUSINESS_START + lane * 10
-    while (cursor < BUSINESS_END - 30) {
+    while (cursor < BUSINESS_END - 30 && addedGT < MAX_GT_TO_ADD) {
       const durChoices = [30, 45, 60, 75, 90]
       const duration = durChoices[Math.floor(Math.random() * durChoices.length)]
       const roundedDuration = duration - (duration % INCREMENT)
       const safeDuration = clamp(roundedDuration, 30, 120)
       if (cursor + safeDuration > BUSINESS_END) break
       appts.push(createBlock(cursor, safeDuration, 'gt-assessment'))
+      addedGT++
       const gapChoices = [15, 30, 30, 45]
       const gap = gapChoices[Math.floor(Math.random() * gapChoices.length)]
       cursor += safeDuration + gap
