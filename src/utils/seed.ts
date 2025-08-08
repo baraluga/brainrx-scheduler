@@ -164,10 +164,14 @@ const seedAug9_2025IfLight = (): void => {
   const target = new Date(2025, 7, 9) // Aug is month index 7
   const targetKey = target.toDateString()
   const existing = listAppointments().filter(a => new Date(a.date).toDateString() === targetKey)
-  const existingCount = existing.length
-  // If we already have a busy day, skip. Otherwise, seed a realistic grid.
-  const MIN_TARGET_COUNT = 30
-  if (existingCount >= MIN_TARGET_COUNT) return
+  // Count existing per session type so we only top-up to small caps
+  const countByType: Record<'training-tabletop'|'training-digital'|'accelerate-rx'|'remote'|'gt', number> = {
+    'training-tabletop': existing.filter((a: any) => (a.sessionType ?? (a.appointmentType === 'training' ? 'training-tabletop' : '')) === 'training-tabletop').length,
+    'training-digital': existing.filter((a: any) => (a.sessionType) === 'training-digital').length,
+    'accelerate-rx': existing.filter((a: any) => (a.sessionType) === 'accelerate-rx').length,
+    'remote': existing.filter((a: any) => (a.sessionType) === 'remote').length,
+    'gt': existing.filter((a: any) => (a.sessionType ?? (a.appointmentType === 'gt-assessment' ? 'gt' : '')) === 'gt').length,
+  }
 
   const students = listStudents()
   const trainers = listTrainers()
@@ -254,53 +258,81 @@ const seedAug9_2025IfLight = (): void => {
   const windowsMorning = [{ start: BUSINESS_START, end: LUNCH_START, probability: 0.12 }]
   const windowsAfternoon = [{ start: LUNCH_END, end: BUSINESS_END - 30, probability: 0.5 }]
 
-  // Table-top and Digital: many lanes, dense afternoon
-  generate({
-    type: 'training-tabletop',
-    lanes: 10,
-    windows: [...windowsMorning, ...windowsAfternoon],
-    durationDist: DURATION_TRAIN,
-    gapDist: GAP_TRAIN,
-  })
-  generate({
-    type: 'training-digital',
-    lanes: 10,
-    windows: [...windowsMorning, ...windowsAfternoon],
-    durationDist: DURATION_TRAIN,
-    gapDist: GAP_TRAIN,
-  })
+  // Desired small caps per type ("handful")
+  const CAP_TT = 6
+  const CAP_DG = 6
+  const CAP_ARX = 3
+  const CAP_RM = 4
+  const CAP_GT = 3
+
+  // Compute remaining to top up
+  const remTT = Math.max(0, CAP_TT - countByType['training-tabletop'])
+  const remDG = Math.max(0, CAP_DG - countByType['training-digital'])
+  const remARX = Math.max(0, CAP_ARX - countByType['accelerate-rx'])
+  const remRM = Math.max(0, CAP_RM - countByType['remote'])
+  const remGT = Math.max(0, CAP_GT - countByType['gt'])
+
+  // Table-top and Digital: top-up to caps
+  if (remTT > 0) {
+    generate({
+      type: 'training-tabletop',
+      lanes: 10,
+      windows: [...windowsMorning, ...windowsAfternoon],
+      durationDist: DURATION_TRAIN,
+      gapDist: GAP_TRAIN,
+      cap: remTT,
+    })
+  }
+  if (remDG > 0) {
+    generate({
+      type: 'training-digital',
+      lanes: 10,
+      windows: [...windowsMorning, ...windowsAfternoon],
+      durationDist: DURATION_TRAIN,
+      gapDist: GAP_TRAIN,
+      cap: remDG,
+    })
+  }
 
   // AccelerateRx: few lanes, moderate density in afternoon
-  generate({
-    type: 'accelerate-rx',
-    lanes: 3,
-    windows: [{ start: LUNCH_END, end: BUSINESS_END - 45, probability: 0.35 }],
-    durationDist: DURATION_LIGHT,
-    gapDist: GAP_LIGHT,
-  })
+  if (remARX > 0) {
+    generate({
+      type: 'accelerate-rx',
+      lanes: 3,
+      windows: [{ start: LUNCH_END, end: BUSINESS_END - 45, probability: 0.35 }],
+      durationDist: DURATION_LIGHT,
+      gapDist: GAP_LIGHT,
+      cap: remARX,
+    })
+  }
 
   // Remote: small number, light spread in afternoon
-  generate({
-    type: 'remote',
-    lanes: 4,
-    windows: [{ start: LUNCH_END + 30, end: BUSINESS_END - 30, probability: 0.25 }],
-    durationDist: DURATION_LIGHT,
-    gapDist: GAP_LIGHT,
-  })
+  if (remRM > 0) {
+    generate({
+      type: 'remote',
+      lanes: 4,
+      windows: [{ start: LUNCH_END + 30, end: BUSINESS_END - 30, probability: 0.25 }],
+      durationDist: DURATION_LIGHT,
+      gapDist: GAP_LIGHT,
+      cap: remRM,
+    })
+  }
 
   // GT: explicitly cap at ~3 sessions, later afternoon
-  generate({
-    type: 'gt',
-    lanes: 4,
-    windows: [{ start: LUNCH_END + 30, end: BUSINESS_END - 60, probability: 0.5 }],
-    durationDist: [45, 60, 60],
-    gapDist: [15, 30],
-    cap: 3,
-  })
+  if (remGT > 0) {
+    generate({
+      type: 'gt',
+      lanes: 4,
+      windows: [{ start: LUNCH_END + 30, end: BUSINESS_END - 60, probability: 0.5 }],
+      durationDist: [45, 60, 60],
+      gapDist: [15, 30],
+      cap: remGT,
+    })
+  }
 
   // Persist
   appts.forEach(a => createAppointment(a))
-  console.log(`[seed] Added ${appts.length} sessions for Aug 9, 2025 (existing: ${existingCount})`)
+  console.log(`[seed] Added ${appts.length} sessions for Aug 9, 2025 (existing by type: ${JSON.stringify(countByType)})`)
 }
 
 export function seedIfEmpty(): void {
