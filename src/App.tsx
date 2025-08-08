@@ -4,18 +4,25 @@ import Dashboard from './pages/Dashboard'
 import StudentManagement from './pages/StudentManagement'
 import Trainers from './pages/Trainers'
 import Calendar from './pages/Calendar'
+import PublicDailyView from './pages/PublicDailyView'
 
 function App() {
+  const PrivateRoutes = () => (
+    <Layout>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/students" element={<StudentManagement />} />
+        <Route path="/trainers" element={<Trainers />} />
+        <Route path="/calendar" element={<Calendar />} />
+      </Routes>
+    </Layout>
+  )
   return (
     <Router>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/students" element={<StudentManagement />} />
-          <Route path="/trainers" element={<Trainers />} />
-          <Route path="/calendar" element={<Calendar />} />
-        </Routes>
-      </Layout>
+      <Routes>
+        <Route path="/live" element={<PublicDailyView />} />
+        <Route path="/*" element={<PrivateRoutes />} />
+      </Routes>
     </Router>
   )
 }
