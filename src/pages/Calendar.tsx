@@ -16,7 +16,7 @@ function Calendar() {
     message: string
     type: 'success' | 'error'
   } | null>(null)
-  const [viewMode, setViewMode] = useState<'list' | 'daily-grid'>('list')
+  const [viewMode, setViewMode] = useState<'list' | 'daily-grid'>('daily-grid')
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().slice(0,10))
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -132,16 +132,19 @@ function Calendar() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="hidden sm:flex items-center gap-2 mr-4">
-            <button onClick={goPrevDay} className="px-2 py-1 rounded border border-gray-300 hover:bg-gray-50">◀</button>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-2 py-1 border border-gray-300 rounded"
-            />
-            <button onClick={goNextDay} className="px-2 py-1 rounded border border-gray-300 hover:bg-gray-50">▶</button>
-          </div>
+          {viewMode === 'daily-grid' && (
+            <div className="hidden sm:flex items-center gap-2 mr-4">
+              <button onClick={goPrevDay} className="px-2 py-1 rounded border border-gray-300 hover:bg-gray-50">◀</button>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="px-2 py-1 border border-gray-300 rounded"
+              />
+              <button onClick={() => setSelectedDate(new Date().toISOString().slice(0,10))} className="px-2 py-1 rounded border border-gray-300 hover:bg-gray-50">Today</button>
+              <button onClick={goNextDay} className="px-2 py-1 rounded border border-gray-300 hover:bg-gray-50">▶</button>
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <label className="text-sm text-gray-600">View:</label>
             <select
@@ -188,7 +191,14 @@ function Calendar() {
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {sortedDates.map(dateKey => (
+            {sortedDates
+              .filter(dateKey => {
+                // hide historical dates by default; show today and future
+                const d = new Date(dateKey)
+                const today = new Date(); today.setHours(0,0,0,0)
+                return d >= today
+              })
+              .map(dateKey => (
               <div key={dateKey} className="p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
                   {formatDate(dateKey)}
@@ -235,6 +245,34 @@ function Calendar() {
                 </div>
               </div>
             ))}
+            {/* Control to show past sessions */}
+            <div className="p-4 text-center">
+              <details>
+                <summary className="cursor-pointer text-sm text-gray-600 hover:text-gray-900">Show past sessions</summary>
+                <div className="mt-4 space-y-6">
+                  {sortedDates
+                    .filter(dateKey => {
+                      const d = new Date(dateKey)
+                      const today = new Date(); today.setHours(0,0,0,0)
+                      return d < today
+                    })
+                    .map(dateKey => (
+                      <div key={dateKey} className="px-6">
+                        <h3 className="text-sm font-medium text-gray-700 mb-2">{formatDate(dateKey)}</h3>
+                        <div className="space-y-3">
+                          {appointmentsByDate[dateKey].map(appointment => (
+                            <div key={appointment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                              <div className="text-sm text-gray-700">
+                                {formatTime(appointment.startTime)} - {formatTime(appointment.endTime)} • {getStudentName(appointment.studentId)} (Trainer: {getTrainerName(appointment.trainerId)})
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </details>
+            </div>
           </div>
         )}
       </div>
