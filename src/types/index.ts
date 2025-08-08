@@ -1,6 +1,8 @@
 export interface User {
   id: string
   name: string
+  firstName?: string
+  lastName?: string
   email: string
   role: 'admin' | 'trainer' | 'student'
   createdAt: string
@@ -18,7 +20,6 @@ export interface Student extends User {
 
 export interface Trainer extends User {
   role: 'trainer'
-  nickname: string
   canDoGtAssessments: boolean
 }
 

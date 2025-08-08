@@ -6,6 +6,7 @@ type DailyGridConfig = {
   businessEndMinutes: number   // minutes from midnight (e.g., 19:00 → 1140)
   incrementMinutes: number     // 15
   slotsPerType: Record<AppointmentType, number>
+  laneWidthPx?: number         // default 120
 }
 
 type DailyGridViewProps = {
@@ -89,6 +90,7 @@ export default function DailyGridView({ date, appointments, students, trainers, 
     businessEndMinutes,
     incrementMinutes,
     slotsPerType,
+    laneWidthPx,
   } = config
 
   const dateKey = date.toDateString()
@@ -129,8 +131,12 @@ export default function DailyGridView({ date, appointments, students, trainers, 
   const rowHeight = 28 // px per 15 min
   const gridHeight = ((businessEndMinutes - businessStartMinutes) / incrementMinutes) * rowHeight
   const BLOCK_GAP = 4 // px – consistent horizontal and vertical spacing
+  const LANE_WIDTH = laneWidthPx ?? 120 // px – wide enough to show 8-char nickname
 
-  const getName = (id: string, list: Array<{ id: string; name: string }>) => list.find((x) => x.id === id)?.name || 'Unknown'
+  const getName = (id: string, list: Array<{ id: string; name?: string; firstName?: string }>) => {
+    const item = list.find((x) => x.id === id)
+    return item?.firstName || item?.name || 'Unknown'
+  }
 
   const nowLineTop = (() => {
     const today = new Date()
@@ -144,15 +150,13 @@ export default function DailyGridView({ date, appointments, students, trainers, 
     const startOffset = (hhmmToMinutes(p.startTime) - businessStartMinutes) / incrementMinutes * rowHeight
     const duration = minutesBetween(p.startTime, p.endTime)
     const height = Math.max(6, (duration / incrementMinutes) * rowHeight - BLOCK_GAP)
-    const isTraining = p.appointmentType === 'training'
-    const laneCount = isTraining ? slotsPerType['training'] : slotsPerType['gt-assessment']
-    const laneWidthPercent = 100 / laneCount
-    const leftPercent = p.laneIndex * laneWidthPercent
+    const leftPx = p.laneIndex * LANE_WIDTH
     const trainer = trainers.find(t => t.id === p.trainerId)
     const color = getTrainerColor(p.trainerId)
     const borderColor = trainer?.canDoGtAssessments ? '#2563eb' : '#6b7280' // blue if GT-capable, gray otherwise
-    const studentName = getName(p.studentId, students)
-    const trainerNick = trainer?.nickname || getName(p.trainerId, trainers)
+    const studentObj = students.find(s => s.id === p.studentId)
+    const studentName = studentObj?.firstName || getName(p.studentId, students)
+    const trainerNick = trainer?.firstName || getName(p.trainerId, trainers)
 
     return (
       <div
@@ -161,22 +165,25 @@ export default function DailyGridView({ date, appointments, students, trainers, 
         style={{
           top: startOffset + BLOCK_GAP / 2,
           height,
-          left: `calc(${leftPercent}% + ${BLOCK_GAP / 2}px)`,
-          width: `calc(${laneWidthPercent}% - ${BLOCK_GAP}px)`,
+          left: leftPx + BLOCK_GAP / 2,
+          width: LANE_WIDTH - BLOCK_GAP,
           backgroundColor: color,
           border: `1px solid ${borderColor}`
         }}
         title={`${studentName} — ${trainerNick}\n${p.startTime}–${p.endTime} (${p.status})`}
       >
         <div className="text-[11px] font-medium text-gray-900 truncate">{studentName}</div>
-        <div className="text-[10px] text-gray-700 truncate">{trainerNick}</div>
+        <div className="text-[10px] text-gray-700">{trainerNick}</div>
       </div>
     )
   }
 
+  const trainingColWidth = slotsPerType['training'] * LANE_WIDTH
+  const gtColWidth = slotsPerType['gt-assessment'] * LANE_WIDTH
+
   return (
-    <div className="bg-white shadow rounded-lg overflow-hidden">
-      <div className="grid" style={{ gridTemplateColumns: '120px 1fr 1fr' }}>
+    <div className="bg-white shadow rounded-lg overflow-x-auto">
+      <div className="grid" style={{ gridTemplateColumns: `120px ${trainingColWidth}px ${gtColWidth}px` }}>
         {/* Two-level header */}
         <div className="border-b border-gray-200" />
         <div className="border-b border-gray-200 text-center font-semibold py-2">Training</div>
@@ -185,14 +192,14 @@ export default function DailyGridView({ date, appointments, students, trainers, 
         {/* Second header row with slot numbers */}
         <div className="border-b border-gray-200 bg-gray-50 text-xs text-gray-600 py-2 px-3">Time</div>
         <div className="border-b border-gray-200 bg-gray-50">
-          <div className="grid" style={{ gridTemplateColumns: `repeat(${slotsPerType['training']}, 1fr)` }}>
+          <div className="grid" style={{ gridTemplateColumns: `repeat(${slotsPerType['training']}, ${LANE_WIDTH}px)` }}>
             {Array.from({ length: slotsPerType['training'] }).map((_, i) => (
               <div key={i} className="text-xs text-gray-600 text-center py-2 border-l first:border-l-0 border-gray-200">{i + 1}</div>
             ))}
           </div>
         </div>
         <div className="border-b border-gray-200 bg-gray-50">
-          <div className="grid" style={{ gridTemplateColumns: `repeat(${slotsPerType['gt-assessment']}, 1fr)` }}>
+          <div className="grid" style={{ gridTemplateColumns: `repeat(${slotsPerType['gt-assessment']}, ${LANE_WIDTH}px)` }}>
             {Array.from({ length: slotsPerType['gt-assessment'] }).map((_, i) => (
               <div key={i} className="text-xs text-gray-600 text-center py-2 border-l first:border-l-0 border-gray-200">{i + 1}</div>
             ))}
@@ -209,7 +216,7 @@ export default function DailyGridView({ date, appointments, students, trainers, 
             ))}
           </div>
         </div>
-        <div className="relative border-l border-gray-200" style={{ height: gridHeight }}>
+        <div className="relative border-l border-gray-200" style={{ height: gridHeight, width: trainingColWidth }}>
           {/* Background grid lines */}
           {timeSlots.map((mins) => (
             <div key={mins} className="absolute left-0 right-0 border-t border-gray-100" style={{ top: ((mins - businessStartMinutes) / incrementMinutes) * rowHeight }} />
@@ -221,7 +228,7 @@ export default function DailyGridView({ date, appointments, students, trainers, 
             <div className="absolute left-0 right-0 border-t-2 border-red-500" style={{ top: nowLineTop }} />
           )}
         </div>
-        <div className="relative border-l border-gray-200" style={{ height: gridHeight }}>
+        <div className="relative border-l border-gray-200" style={{ height: gridHeight, width: gtColWidth }}>
           {timeSlots.map((mins) => (
             <div key={mins} className="absolute left-0 right-0 border-t border-gray-100" style={{ top: ((mins - businessStartMinutes) / incrementMinutes) * rowHeight }} />
           ))}

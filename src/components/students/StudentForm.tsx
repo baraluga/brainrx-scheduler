@@ -2,7 +2,8 @@ import { useState, useEffect, FormEvent } from 'react'
 import { Student } from '../../types/index'
 
 interface StudentFormData {
-  name: string
+  firstName: string
+  lastName: string
   email: string
   dateOfBirth: string
   guardianName: string
@@ -12,7 +13,8 @@ interface StudentFormData {
 }
 
 interface StudentFormErrors {
-  name?: string
+  firstName?: string
+  lastName?: string
   email?: string
   dateOfBirth?: string
   guardianEmail?: string
@@ -28,7 +30,8 @@ interface StudentFormProps {
 
 export default function StudentForm({ initial, onSubmit, onCancel, submitLabel = 'Save Student' }: StudentFormProps) {
   const [formData, setFormData] = useState<StudentFormData>({
-    name: initial?.name || '',
+    firstName: initial?.firstName || (initial?.name?.split(' ')?.[0] ?? ''),
+    lastName: initial?.lastName || (initial?.name?.split(' ').slice(1).join(' ') ?? ''),
     email: initial?.email || '',
     dateOfBirth: initial?.dateOfBirth ? initial.dateOfBirth.split('T')[0] : '', // Convert from ISO to date input format
     guardianName: initial?.guardianName || '',
@@ -41,9 +44,12 @@ export default function StudentForm({ initial, onSubmit, onCancel, submitLabel =
 
   const validateField = (name: string, value: string): string | undefined => {
     switch (name) {
-      case 'name':
-        if (!value.trim()) return 'Student name is required'
+      case 'firstName':
+        if (!value.trim()) return 'First name is required'
         if (value.trim().length < 2) return 'Name must be at least 2 characters'
+        if (value.trim().length > 100) return 'Name must be less than 100 characters'
+        break
+      case 'lastName':
         if (value.trim().length > 100) return 'Name must be less than 100 characters'
         break
       
@@ -88,7 +94,8 @@ export default function StudentForm({ initial, onSubmit, onCancel, submitLabel =
   const validateForm = () => {
     const newErrors: StudentFormErrors = {}
     
-    newErrors.name = validateField('name', formData.name)
+    newErrors.firstName = validateField('firstName', formData.firstName)
+    newErrors.lastName = validateField('lastName', formData.lastName)
     newErrors.email = validateField('email', formData.email)
     newErrors.dateOfBirth = validateField('dateOfBirth', formData.dateOfBirth)
     newErrors.guardianEmail = validateField('guardianEmail', formData.guardianEmail)
@@ -119,8 +126,11 @@ export default function StudentForm({ initial, onSubmit, onCancel, submitLabel =
       return
     }
 
+    const fullName = `${formData.firstName} ${formData.lastName}`.trim()
     const submitData = {
-      name: formData.name.trim(),
+      name: fullName,
+      firstName: formData.firstName.trim(),
+      lastName: formData.lastName.trim() || undefined,
       email: formData.email.trim(),
       dateOfBirth: new Date(formData.dateOfBirth).toISOString(),
       guardianName: formData.guardianName.trim() || undefined,
@@ -151,26 +161,49 @@ export default function StudentForm({ initial, onSubmit, onCancel, submitLabel =
       <div className="space-y-4">
         <h3 className="text-lg font-medium text-gray-900">Basic Information</h3>
         
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-            Student Name *
-          </label>
-          <input
-            type="text"
-            id="name"
-            value={formData.name}
-            onChange={(e) => handleFieldChange('name', e.target.value)}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-              errors.name ? 'border-red-500' : 'border-gray-300'
-            }`}
-            aria-invalid={!!errors.name}
-            aria-describedby={errors.name ? 'name-error' : undefined}
-          />
-          {errors.name && (
-            <p id="name-error" className="mt-1 text-sm text-red-600">
-              {errors.name}
-            </p>
-          )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+              First Name *
+            </label>
+            <input
+              type="text"
+              id="firstName"
+              value={formData.firstName}
+              onChange={(e) => handleFieldChange('firstName', e.target.value)}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                errors.firstName ? 'border-red-500' : 'border-gray-300'
+              }`}
+              aria-invalid={!!errors.firstName}
+              aria-describedby={errors.firstName ? 'firstName-error' : undefined}
+            />
+            {errors.firstName && (
+              <p id="firstName-error" className="mt-1 text-sm text-red-600">
+                {errors.firstName}
+              </p>
+            )}
+          </div>
+          <div>
+            <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+              Last Name
+            </label>
+            <input
+              type="text"
+              id="lastName"
+              value={formData.lastName}
+              onChange={(e) => handleFieldChange('lastName', e.target.value)}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                errors.lastName ? 'border-red-500' : 'border-gray-300'
+              }`}
+              aria-invalid={!!errors.lastName}
+              aria-describedby={errors.lastName ? 'lastName-error' : undefined}
+            />
+            {errors.lastName && (
+              <p id="lastName-error" className="mt-1 text-sm text-red-600">
+                {errors.lastName}
+              </p>
+            )}
+          </div>
         </div>
 
         <div>

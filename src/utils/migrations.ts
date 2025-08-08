@@ -15,8 +15,12 @@ export function runMigrations(): void {
     localStorage.setItem(SCHEMA_VERSION_KEY, '3')
   }
   if (currentVersion < 4) {
-    migrateAddTrainerNickname()
+    migrateSplitNames()
     localStorage.setItem(SCHEMA_VERSION_KEY, '4')
+  }
+  if (currentVersion < 6) {
+    migrateEnsureNames()
+    localStorage.setItem(SCHEMA_VERSION_KEY, '6')
   }
 }
 
@@ -64,17 +68,66 @@ function migrateSimplifyTrainers(): void {
   }
 }
 
-function migrateAddTrainerNickname(): void {
+function migrateSplitNames(): void {
   try {
-    const trainers = loadCollection<any>(STORAGE_KEYS.trainers)
-    const updated = trainers.map((t) => {
-      const base = (t?.name || '').trim()
-      const nickname = (t?.nickname && String(t.nickname).trim()) || base.split(' ')[0] || 'Trainer'
-      return { ...t, nickname }
+    const split = (full?: string) => {
+      const base = (full || '').trim()
+      if (!base) return { firstName: undefined, lastName: undefined }
+      const parts = base.split(/\s+/)
+      const firstName = parts[0]
+      const lastName = parts.slice(1).join(' ') || undefined
+      return { firstName, lastName }
+    }
+
+    const students = loadCollection<any>(STORAGE_KEYS.students)
+    const migratedStudents = students.map((s) => {
+      const { firstName, lastName } = split(s?.name)
+      return { ...s, firstName: s?.firstName || firstName, lastName: s?.lastName || lastName }
     })
-    saveCollection(STORAGE_KEYS.trainers, updated)
+    saveCollection(STORAGE_KEYS.students, migratedStudents)
+
+    const trainers = loadCollection<any>(STORAGE_KEYS.trainers)
+    const migratedTrainers = trainers.map((t) => {
+      const { firstName, lastName } = split(t?.name)
+      // remove nickname if exists
+      const { nickname, ...rest } = t || {}
+      return { ...rest, firstName: t?.firstName || firstName, lastName: t?.lastName || lastName }
+    })
+    saveCollection(STORAGE_KEYS.trainers, migratedTrainers)
   } catch (error) {
-    console.error('Migration (add trainer nickname) failed:', error)
+    console.error('Migration (split names) failed:', error)
+  }
+}
+
+function migrateEnsureNames(): void {
+  try {
+    const split = (full?: string) => {
+      const base = (full || '').trim()
+      if (!base) return { firstName: undefined, lastName: undefined }
+      const parts = base.split(/\s+/)
+      const firstName = parts[0]
+      const lastName = parts.slice(1).join(' ') || undefined
+      return { firstName, lastName }
+    }
+
+    const students = loadCollection<any>(STORAGE_KEYS.students)
+    const fixedStudents = students.map((s) => {
+      if (s?.firstName) return s
+      const { firstName, lastName } = split(s?.name)
+      return { ...s, firstName, lastName: s?.lastName || lastName }
+    })
+    saveCollection(STORAGE_KEYS.students, fixedStudents)
+
+    const trainers = loadCollection<any>(STORAGE_KEYS.trainers)
+    const fixedTrainers = trainers.map((t) => {
+      if (t?.firstName) return t
+      const { firstName, lastName } = split(t?.name)
+      const { nickname, ...rest } = t || {}
+      return { ...rest, firstName, lastName: t?.lastName || lastName }
+    })
+    saveCollection(STORAGE_KEYS.trainers, fixedTrainers)
+  } catch (error) {
+    console.error('Migration (ensure names) failed:', error)
   }
 }
 

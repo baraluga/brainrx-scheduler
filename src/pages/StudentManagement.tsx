@@ -37,10 +37,10 @@ export default function StudentManagement() {
     // Filter by search query (name or email)
     if (debouncedSearchQuery.trim()) {
       const query = debouncedSearchQuery.toLowerCase()
-      filtered = filtered.filter(student => 
-        student.name.toLowerCase().includes(query) ||
-        student.email.toLowerCase().includes(query)
-      )
+      filtered = filtered.filter(student => {
+        const name = (student.firstName || student.name || '').toLowerCase()
+        return name.includes(query) || student.email.toLowerCase().includes(query)
+      })
     }
 
     return filtered
@@ -264,7 +264,7 @@ export default function StudentManagement() {
                     <td className="px-6 py-4">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {student.name}
+                          {student.firstName || student.name}
                         </div>
                         {student.guardianName && (
                           <div className="text-sm text-gray-500">

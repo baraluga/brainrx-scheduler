@@ -36,10 +36,10 @@ export default function TrainerManagement() {
     if (!debouncedSearchQuery.trim()) return trainers
 
     const query = debouncedSearchQuery.toLowerCase()
-    return trainers.filter(trainer => 
-      trainer.name.toLowerCase().includes(query) ||
-      trainer.email.toLowerCase().includes(query)
-    )
+    return trainers.filter(trainer => {
+      const name = (trainer.firstName || trainer.name || '').toLowerCase()
+      return name.includes(query) || trainer.email.toLowerCase().includes(query)
+    })
   }, [trainers, debouncedSearchQuery])
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -235,7 +235,7 @@ export default function TrainerManagement() {
                   <tr key={trainer.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div className="text-sm font-medium text-gray-900">
-                        {trainer.name}
+                        {trainer.firstName || trainer.name}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

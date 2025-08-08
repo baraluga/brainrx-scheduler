@@ -9,21 +9,24 @@ const seedTrainers = (): string[] => {
   const trainers: Omit<Trainer, 'id' | 'createdAt' | 'updatedAt'>[] = [
     {
       name: 'Dr. Sarah Johnson',
-      nickname: 'Sarah',
+      firstName: 'Sarah',
+      lastName: 'Johnson',
       email: 'sarah.johnson@brainrx.com',
       role: 'trainer',
       canDoGtAssessments: true
     },
     {
       name: 'Michael Chen',
-      nickname: 'Mike',
+      firstName: 'Michael',
+      lastName: 'Chen',
       email: 'michael.chen@brainrx.com',
       role: 'trainer',
       canDoGtAssessments: false
     },
     {
       name: 'Lisa Rodriguez',
-      nickname: 'Lisa',
+      firstName: 'Lisa',
+      lastName: 'Rodriguez',
       email: 'lisa.rodriguez@brainrx.com',
       role: 'trainer',
       canDoGtAssessments: true
@@ -37,6 +40,8 @@ const seedStudents = (): string[] => {
   const students: Omit<Student, 'id' | 'createdAt' | 'updatedAt'>[] = [
     {
       name: 'Emma Wilson',
+      firstName: 'Emma',
+      lastName: 'Wilson',
       email: 'emma.wilson.parent@email.com',
       role: 'student',
       dateOfBirth: '2012-03-15T00:00:00.000Z',
@@ -48,6 +53,8 @@ const seedStudents = (): string[] => {
     },
     {
       name: 'Alex Thompson',
+      firstName: 'Alex',
+      lastName: 'Thompson',
       email: 'alex.thompson.parent@email.com',
       role: 'student',
       dateOfBirth: '2010-07-22T00:00:00.000Z',
@@ -58,6 +65,8 @@ const seedStudents = (): string[] => {
     },
     {
       name: 'Maya Patel',
+      firstName: 'Maya',
+      lastName: 'Patel',
       email: 'maya.patel.parent@email.com',
       role: 'student',
       dateOfBirth: '2014-11-08T00:00:00.000Z',
@@ -69,6 +78,8 @@ const seedStudents = (): string[] => {
     },
     {
       name: 'Jordan Davis',
+      firstName: 'Jordan',
+      lastName: 'Davis',
       email: 'jordan.davis.parent@email.com',
       role: 'student',
       dateOfBirth: '2013-01-30T00:00:00.000Z',
@@ -79,6 +90,8 @@ const seedStudents = (): string[] => {
     },
     {
       name: 'Sophie Martinez',
+      firstName: 'Sophie',
+      lastName: 'Martinez',
       email: 'sophie.martinez.parent@email.com',
       role: 'student',
       dateOfBirth: '2011-09-12T00:00:00.000Z',

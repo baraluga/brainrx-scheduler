@@ -374,7 +374,7 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
           <option value="">Select a student</option>
           {students.map((student) => (
             <option key={student.id} value={student.id}>
-              {student.name}
+              {student.firstName || student.name}
             </option>
           ))}
         </select>
@@ -413,7 +413,7 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
           <option value="">Select a trainer</option>
           {availableTrainers.map((trainer) => (
             <option key={trainer.id} value={trainer.id}>
-              {trainer.name}
+              {trainer.firstName || trainer.name}
             </option>
           ))}
         </select>
