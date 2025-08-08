@@ -180,10 +180,10 @@ function Calendar() {
       {/* Toast notification */}
       {toast && (
         <div
-          className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-md shadow-lg ${
-            toast.type === "success"
-              ? "bg-green-500 text-white"
-              : "bg-red-500 text-white"
+          className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg border ${
+            toast.type === 'success'
+              ? 'bg-primary-100 text-ink-700 border-primary-200'
+              : 'bg-red-50 text-red-700 border-red-200'
           }`}
         >
           {toast.message}
