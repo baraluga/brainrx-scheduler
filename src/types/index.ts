@@ -18,6 +18,7 @@ export interface Student extends User {
 
 export interface Trainer extends User {
   role: 'trainer'
+  nickname: string
   canDoGtAssessments: boolean
 }
 

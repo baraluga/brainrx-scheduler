@@ -1,7 +1,6 @@
 import { STORAGE_KEYS, loadCollection, saveCollection } from './storage'
 
 const SCHEMA_VERSION_KEY = 'brx_schema_version'
-const TARGET_VERSION = 3
 
 export function runMigrations(): void {
   const raw = localStorage.getItem(SCHEMA_VERSION_KEY)
@@ -14,6 +13,10 @@ export function runMigrations(): void {
   if (currentVersion < 3) {
     migrateSimplifyTrainers()
     localStorage.setItem(SCHEMA_VERSION_KEY, '3')
+  }
+  if (currentVersion < 4) {
+    migrateAddTrainerNickname()
+    localStorage.setItem(SCHEMA_VERSION_KEY, '4')
   }
 }
 
@@ -58,6 +61,20 @@ function migrateSimplifyTrainers(): void {
     saveCollection(STORAGE_KEYS.trainers, simplified)
   } catch (error) {
     console.error('Migration (simplify trainers) failed:', error)
+  }
+}
+
+function migrateAddTrainerNickname(): void {
+  try {
+    const trainers = loadCollection<any>(STORAGE_KEYS.trainers)
+    const updated = trainers.map((t) => {
+      const base = (t?.name || '').trim()
+      const nickname = (t?.nickname && String(t.nickname).trim()) || base.split(' ')[0] || 'Trainer'
+      return { ...t, nickname }
+    })
+    saveCollection(STORAGE_KEYS.trainers, updated)
+  } catch (error) {
+    console.error('Migration (add trainer nickname) failed:', error)
   }
 }
 

@@ -4,12 +4,14 @@ import { Trainer } from '../../types/index'
 interface TrainerFormData {
   name: string
   email: string
+  nickname: string
   canDoGtAssessments: boolean
 }
 
 interface TrainerFormErrors {
   name?: string
   email?: string
+  nickname?: string
 }
 
 interface TrainerFormProps {
@@ -23,6 +25,7 @@ export default function TrainerForm({ initial, onSubmit, onCancel, submitLabel =
   const [formData, setFormData] = useState<TrainerFormData>({
     name: initial?.name || '',
     email: initial?.email || '',
+    nickname: initial?.nickname || '',
     canDoGtAssessments: initial?.canDoGtAssessments ?? false
   })
 
@@ -43,6 +46,11 @@ export default function TrainerForm({ initial, onSubmit, onCancel, submitLabel =
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
         if (!emailRegex.test(value)) return 'Please enter a valid email address'
         break
+      case 'nickname':
+        if (typeof value !== 'string') return undefined
+        if (!value.trim()) return 'Nickname is required'
+        if (value.trim().length > 8) return 'Nickname must be at most 8 characters'
+        break
       
       case 'canDoGtAssessments':
         break
@@ -55,6 +63,7 @@ export default function TrainerForm({ initial, onSubmit, onCancel, submitLabel =
     
     newErrors.name = validateField('name', formData.name)
     newErrors.email = validateField('email', formData.email)
+    newErrors.nickname = validateField('nickname', formData.nickname)
     // no additional required fields
     
     setErrors(newErrors)
@@ -86,6 +95,7 @@ export default function TrainerForm({ initial, onSubmit, onCancel, submitLabel =
     const submitData = {
       name: formData.name.trim(),
       email: formData.email.trim(),
+      nickname: formData.nickname.trim(),
       canDoGtAssessments: Boolean(formData.canDoGtAssessments)
     }
 
@@ -151,6 +161,29 @@ export default function TrainerForm({ initial, onSubmit, onCancel, submitLabel =
           {errors.email && (
             <p id="email-error" className="mt-1 text-sm text-red-600">
               {errors.email}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label htmlFor="nickname" className="block text-sm font-medium text-gray-700 mb-2">
+            Nickname (max 8 chars) *
+          </label>
+          <input
+            type="text"
+            id="nickname"
+            value={formData.nickname}
+            onChange={(e) => handleFieldChange('nickname', e.target.value)}
+            maxLength={8}
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+              errors.nickname ? 'border-red-500' : 'border-gray-300'
+            }`}
+            aria-invalid={!!errors.nickname}
+            aria-describedby={errors.nickname ? 'nickname-error' : undefined}
+          />
+          {errors.nickname && (
+            <p id="nickname-error" className="mt-1 text-sm text-red-600">
+              {errors.nickname}
             </p>
           )}
         </div>

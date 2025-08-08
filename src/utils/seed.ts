@@ -9,18 +9,21 @@ const seedTrainers = (): string[] => {
   const trainers: Omit<Trainer, 'id' | 'createdAt' | 'updatedAt'>[] = [
     {
       name: 'Dr. Sarah Johnson',
+      nickname: 'Sarah',
       email: 'sarah.johnson@brainrx.com',
       role: 'trainer',
       canDoGtAssessments: true
     },
     {
       name: 'Michael Chen',
+      nickname: 'Mike',
       email: 'michael.chen@brainrx.com',
       role: 'trainer',
       canDoGtAssessments: false
     },
     {
       name: 'Lisa Rodriguez',
+      nickname: 'Lisa',
       email: 'lisa.rodriguez@brainrx.com',
       role: 'trainer',
       canDoGtAssessments: true

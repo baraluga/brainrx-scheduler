@@ -152,7 +152,7 @@ export default function DailyGridView({ date, appointments, students, trainers, 
     const color = getTrainerColor(p.trainerId)
     const borderColor = trainer?.canDoGtAssessments ? '#2563eb' : '#6b7280' // blue if GT-capable, gray otherwise
     const studentName = getName(p.studentId, students)
-    const trainerName = getName(p.trainerId, trainers)
+    const trainerNick = trainer?.nickname || getName(p.trainerId, trainers)
 
     return (
       <div
@@ -166,10 +166,10 @@ export default function DailyGridView({ date, appointments, students, trainers, 
           backgroundColor: color,
           border: `1px solid ${borderColor}`
         }}
-        title={`${studentName} — ${trainerName}\n${p.startTime}–${p.endTime} (${p.status})`}
+        title={`${studentName} — ${trainerNick}\n${p.startTime}–${p.endTime} (${p.status})`}
       >
         <div className="text-[11px] font-medium text-gray-900 truncate">{studentName}</div>
-        <div className="text-[10px] text-gray-700 truncate">{trainerName}</div>
+        <div className="text-[10px] text-gray-700 truncate">{trainerNick}</div>
       </div>
     )
   }
