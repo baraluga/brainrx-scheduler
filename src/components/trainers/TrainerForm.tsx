@@ -63,7 +63,6 @@ export default function TrainerForm({ initial, onSubmit, onCancel, submitLabel =
     newErrors.firstName = validateField('firstName', formData.firstName)
     newErrors.lastName = validateField('lastName', formData.lastName)
     newErrors.email = validateField('email', formData.email)
-    newErrors.nickname = validateField('nickname', formData.nickname)
     // no additional required fields
     
     setErrors(newErrors)
@@ -190,28 +189,7 @@ export default function TrainerForm({ initial, onSubmit, onCancel, submitLabel =
           )}
         </div>
 
-        <div>
-          <label htmlFor="nickname" className="block text-sm font-medium text-gray-700 mb-2">
-            Nickname (max 8 chars) *
-          </label>
-          <input
-            type="text"
-            id="nickname"
-            value={formData.nickname}
-            onChange={(e) => handleFieldChange('nickname', e.target.value)}
-            maxLength={8}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-              errors.nickname ? 'border-red-500' : 'border-gray-300'
-            }`}
-            aria-invalid={!!errors.nickname}
-            aria-describedby={errors.nickname ? 'nickname-error' : undefined}
-          />
-          {errors.nickname && (
-            <p id="nickname-error" className="mt-1 text-sm text-red-600">
-              {errors.nickname}
-            </p>
-          )}
-        </div>
+        
       </div>
 
       {/* GT Assessment Capability */}
