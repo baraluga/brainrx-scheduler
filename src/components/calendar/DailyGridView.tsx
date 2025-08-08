@@ -269,10 +269,10 @@ export default function DailyGridView({
         }}
         title={`${studentName} — ${trainerNick}\n${p.startTime}–${p.endTime} (${p.status})`}
       >
-        <div className="text-[11px] font-medium text-gray-900 truncate">
+        <div className="text-[12px] font-bold text-ink-900 truncate leading-tight">
           {studentName}
         </div>
-        <div className="text-[10px] text-gray-700">{trainerNick}</div>
+        <div className="text-[10px] text-ink-700 leading-tight">{trainerNick}</div>
       </div>
     );
   };
