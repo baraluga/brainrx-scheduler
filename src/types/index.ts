@@ -77,4 +77,6 @@ export interface CalendarEvent {
   trainerName?: string
 }
 
-export type Appointment = Session
+export type AppointmentType = 'training' | 'gt-assessment'
+
+export type Appointment = Session & { appointmentType: AppointmentType }
