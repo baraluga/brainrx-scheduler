@@ -21,17 +21,12 @@ type PositionedAppointment = Appointment & {
   laneIndex: number
 }
 
-const PASTEL_COLORS = [
-  '#93c5fd', // blue-300
-  '#a5b4fc', // indigo-300
-  '#c4b5fd', // violet-300
-  '#f9a8d4', // pink-300
-  '#fca5a5', // red-300
-  '#fdba74', // orange-300
-  '#fcd34d', // amber-300
-  '#86efac', // green-300
-  '#7dd3fc', // sky-300
-  '#6ee7b7', // emerald-300
+// Expanded, more distinct palette
+const TRAINER_COLORS = [
+  '#60a5fa', '#818cf8', '#a78bfa', '#f472b6', '#fb7185',
+  '#fb923c', '#f59e0b', '#34d399', '#22d3ee', '#4ade80',
+  '#93c5fd', '#a5b4fc', '#c4b5fd', '#f9a8d4', '#fca5a5',
+  '#fdba74', '#fcd34d', '#7dd3fc', '#6ee7b7', '#86efac'
 ]
 
 function minutesBetween(a: string, b: string): number {
@@ -45,14 +40,15 @@ function hhmmToMinutes(hhmm: string): number {
   return h * 60 + m
 }
 
-function getTrainerColor(trainerId: string): string {
-  // Stable color selection by hashing trainerId
-  let hash = 0
-  for (let i = 0; i < trainerId.length; i++) {
-    hash = (hash * 31 + trainerId.charCodeAt(i)) >>> 0
-  }
-  const idx = hash % PASTEL_COLORS.length
-  return PASTEL_COLORS[idx]
+function buildTrainerColorMap(trainers: Trainer[]): Map<string, string> {
+  const ids = [...trainers].map(t => t.id).sort()
+  const map = new Map<string, string>()
+  const n = TRAINER_COLORS.length
+  const step = 7
+  ids.forEach((id, index) => {
+    map.set(id, TRAINER_COLORS[(index * step) % n])
+  })
+  return map
 }
 
 function placeInLanes(appointments: Appointment[], slotCount: number): PositionedAppointment[] {
@@ -165,6 +161,7 @@ export default function DailyGridView({ date, appointments, students, trainers, 
     const item = list.find((x) => x.id === id)
     return item?.firstName || item?.name || 'Unknown'
   }
+  const trainerColorMap = useMemo(() => buildTrainerColorMap(trainers), [trainers])
 
   const nowLineTop = (() => {
     const today = new Date()
@@ -180,7 +177,7 @@ export default function DailyGridView({ date, appointments, students, trainers, 
     const height = Math.max(6, (duration / incrementMinutes) * rowHeight - BLOCK_GAP)
     const leftPx = p.laneIndex * LANE_WIDTH
     const trainer = trainers.find(t => t.id === p.trainerId)
-    const color = getTrainerColor(p.trainerId)
+    const color = trainerColorMap.get(p.trainerId) || TRAINER_COLORS[0]
     const borderColor = trainer?.canDoGtAssessments ? '#2563eb' : '#6b7280' // blue if GT-capable, gray otherwise
     const studentObj = students.find(s => s.id === p.studentId)
     const studentName = studentObj?.firstName || getName(p.studentId, students)
