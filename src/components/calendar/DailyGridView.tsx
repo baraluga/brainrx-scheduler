@@ -213,6 +213,22 @@ export default function DailyGridView({
     [trainers]
   );
 
+  // Tinted backgrounds per session type (distinct from trainer block colors)
+  const COLUMN_BG: Record<SessionType, string> = {
+    'training-tabletop': 'rgba(125, 211, 252, 0.12)',   // sky-400 @12%
+    'training-digital': 'rgba(129, 140, 248, 0.12)',    // indigo-400 @12%
+    'accelerate-rx': 'rgba(245, 158, 11, 0.12)',        // amber-500 @12%
+    'remote': 'rgba(52, 211, 153, 0.12)',               // emerald-400 @12%
+    'gt': 'rgba(192, 132, 252, 0.12)',                  // purple-400 @12%
+  }
+  const HEADER_BG: Record<SessionType, string> = {
+    'training-tabletop': 'rgba(125, 211, 252, 0.35)',
+    'training-digital': 'rgba(129, 140, 248, 0.35)',
+    'accelerate-rx': 'rgba(245, 158, 11, 0.35)',
+    'remote': 'rgba(52, 211, 153, 0.35)',
+    'gt': 'rgba(192, 132, 252, 0.35)',
+  }
+
    const nowLineTop = (() => {
     const today = new Date();
     if (today.toDateString() !== dateKey) return null;
@@ -296,19 +312,19 @@ export default function DailyGridView({
       >
         {/* Two-level header */}
         <div className="border-b border-r border-gray-200 sticky left-0 z-20 bg-white" />
-        <div className="border-b border-gray-200 text-center font-semibold py-2">
+        <div className="border-b border-gray-200 text-center font-semibold py-2" style={{ backgroundColor: HEADER_BG['training-tabletop'] }}>
           Training (Table-top)
         </div>
-        <div className="border-b border-gray-200 text-center font-semibold py-2">
+        <div className="border-b border-gray-200 text-center font-semibold py-2" style={{ backgroundColor: HEADER_BG['training-digital'] }}>
           Training (Digital)
         </div>
-        <div className="border-b border-gray-200 text-center font-semibold py-2">
+        <div className="border-b border-gray-200 text-center font-semibold py-2" style={{ backgroundColor: HEADER_BG['accelerate-rx'] }}>
           AccelerateRx
         </div>
-        <div className="border-b border-gray-200 text-center font-semibold py-2">
+        <div className="border-b border-gray-200 text-center font-semibold py-2" style={{ backgroundColor: HEADER_BG['remote'] }}>
           Remote
         </div>
-        <div className="border-b border-gray-200 text-center font-semibold py-2">
+        <div className="border-b border-gray-200 text-center font-semibold py-2" style={{ backgroundColor: HEADER_BG['gt'] }}>
           GT
         </div>
 
@@ -316,7 +332,7 @@ export default function DailyGridView({
         <div className="border-b border-r border-gray-200 bg-gray-50 text-xs text-gray-600 py-2 px-3 sticky left-0 z-20">
           Time
         </div>
-        <div className="border-b border-gray-200 bg-gray-50">
+        <div className="border-b border-gray-200" style={{ backgroundColor: HEADER_BG['training-tabletop'] }}>
           <div
             className="grid"
             style={{
@@ -335,7 +351,7 @@ export default function DailyGridView({
             )}
           </div>
         </div>
-        <div className="border-b border-gray-200 bg-gray-50">
+        <div className="border-b border-gray-200" style={{ backgroundColor: HEADER_BG['training-digital'] }}>
           <div
             className="grid"
             style={{
@@ -354,7 +370,7 @@ export default function DailyGridView({
             )}
           </div>
         </div>
-        <div className="border-b border-gray-200 bg-gray-50">
+        <div className="border-b border-gray-200" style={{ backgroundColor: HEADER_BG['accelerate-rx'] }}>
           <div
             className="grid"
             style={{
@@ -373,7 +389,7 @@ export default function DailyGridView({
             )}
           </div>
         </div>
-        <div className="border-b border-gray-200 bg-gray-50">
+        <div className="border-b border-gray-200" style={{ backgroundColor: HEADER_BG['remote'] }}>
           <div
             className="grid"
             style={{
@@ -390,7 +406,7 @@ export default function DailyGridView({
             ))}
           </div>
         </div>
-        <div className="border-b border-gray-200 bg-gray-50">
+        <div className="border-b border-gray-200" style={{ backgroundColor: HEADER_BG['gt'] }}>
           <div
             className="grid"
             style={{
@@ -445,7 +461,7 @@ export default function DailyGridView({
         </div>
         <div
           className="relative border-l border-gray-200"
-          style={{ height: gridHeight, width: ttColWidth }}
+          style={{ height: gridHeight, width: ttColWidth, backgroundColor: COLUMN_BG['training-tabletop'] }}
         >
           {/* Background grid lines */}
           {currentSlotTop !== null && (
@@ -481,7 +497,7 @@ export default function DailyGridView({
         </div>
         <div
           className="relative border-l border-gray-200"
-          style={{ height: gridHeight, width: dgColWidth }}
+          style={{ height: gridHeight, width: dgColWidth, backgroundColor: COLUMN_BG['training-digital'] }}
         >
           {currentSlotTop !== null && (
             <div
@@ -514,7 +530,7 @@ export default function DailyGridView({
         </div>
         <div
           className="relative border-l border-gray-200"
-          style={{ height: gridHeight, width: arxColWidth }}
+          style={{ height: gridHeight, width: arxColWidth, backgroundColor: COLUMN_BG['accelerate-rx'] }}
         >
           {currentSlotTop !== null && (
             <div
@@ -547,7 +563,7 @@ export default function DailyGridView({
         </div>
         <div
           className="relative border-l border-gray-200"
-          style={{ height: gridHeight, width: rmColWidth }}
+          style={{ height: gridHeight, width: rmColWidth, backgroundColor: COLUMN_BG['remote'] }}
         >
           {currentSlotTop !== null && (
             <div
@@ -580,7 +596,7 @@ export default function DailyGridView({
         </div>
         <div
           className="relative border-l border-gray-200"
-          style={{ height: gridHeight, width: gtColWidth }}
+          style={{ height: gridHeight, width: gtColWidth, backgroundColor: COLUMN_BG['gt'] }}
         >
           {currentSlotTop !== null && (
             <div
