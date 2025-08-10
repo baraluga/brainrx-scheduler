@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Session, SessionType, Student, Trainer } from "../../types/index";
 
  type DailyGridConfig = {
@@ -231,6 +231,26 @@ export default function DailyGridView({
     return slotIndex * rowHeight;
   })();
 
+  const [editOverlayVisibleId, setEditOverlayVisibleId] = useState<string | null>(null);
+  const hoverTimerRef = useRef<number | null>(null);
+
+  const handleMouseEnter = (sessionId: string) => {
+    if (hoverTimerRef.current) {
+      window.clearTimeout(hoverTimerRef.current);
+    }
+    hoverTimerRef.current = window.setTimeout(() => {
+      setEditOverlayVisibleId(sessionId);
+    }, 500);
+  };
+
+  const handleMouseLeave = (sessionId: string) => {
+    if (hoverTimerRef.current) {
+      window.clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+    setEditOverlayVisibleId((current) => (current === sessionId ? null : current));
+  };
+
   const renderAppt = (p: PositionedSession) => {
     const startOffset =
       ((hhmmToMinutes(p.startTime) - businessStartMinutes) / incrementMinutes) *
@@ -247,12 +267,12 @@ export default function DailyGridView({
     const studentObj = students.find((s) => s.id === p.studentId);
     const studentName = studentObj?.firstName || p.clientName || getName(p.studentId || '', students);
     const trainerNick = trainer?.firstName || getName(p.trainerId, trainers);
-    const isTrainingSession = p.sessionType === 'training-tabletop' || p.sessionType === 'training-digital';
+    //
 
     return (
       <div
         key={p.id}
-        className="absolute px-2 py-1 rounded-md overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+        className="group absolute px-2 py-1 rounded-md overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-default"
         style={{
           top: startOffset + BLOCK_GAP / 2,
           height,
@@ -262,8 +282,22 @@ export default function DailyGridView({
           border: `1px solid ${borderColor}`,
         }}
         title={`${studentName} — ${trainerNick}\n${p.startTime}–${p.endTime} (${p.status})`}
-        onClick={() => onSelect?.(p)}
+        onMouseEnter={() => handleMouseEnter(p.id)}
+        onMouseLeave={() => handleMouseLeave(p.id)}
       >
+        {onSelect && editOverlayVisibleId === p.id && (
+          <button
+            type="button"
+            aria-label="Edit session"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect?.(p);
+            }}
+            className="absolute top-1 right-1 z-10 px-1.5 py-0.5 rounded text-[10px] bg-white/90 text-gray-800 border border-gray-300 shadow-sm"
+          >
+            Edit
+          </button>
+        )}
         <div className="text-[12px] font-bold text-ink-900 truncate leading-tight">
           {studentName}
         </div>
