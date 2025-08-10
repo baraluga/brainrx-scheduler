@@ -5,6 +5,8 @@ import { listTrainers, createTrainer, updateTrainer, deleteTrainer, getTrainer }
 import TrainerForm from '../components/trainers/TrainerForm'
 import ConfirmDialog from '../components/common/ConfirmDialog'
 import EmptyState from '../components/common/EmptyState'
+import { ToastContainer } from '../components/common/Toast'
+import { useToast } from '../hooks/useToast'
 
 type ViewMode = 'list' | 'add' | 'edit'
 
@@ -17,10 +19,7 @@ export default function TrainerManagement() {
     isOpen: boolean
     trainer: Trainer | null
   }>({ isOpen: false, trainer: null })
-  const [toast, setToast] = useState<{
-    message: string
-    type: 'success' | 'error'
-  } | null>(null)
+  const { toasts, removeToast, showSuccess, showError } = useToast()
 
   // Debounced search with useEffect
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
@@ -43,8 +42,11 @@ export default function TrainerManagement() {
   }, [trainers, debouncedSearchQuery])
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ message, type })
-    setTimeout(() => setToast(null), 5000)
+    if (type === 'success') {
+      showSuccess(message)
+    } else {
+      showError(message)
+    }
   }
 
   const refreshTrainers = () => {
@@ -146,14 +148,8 @@ export default function TrainerManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Toast notification */}
-      {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-md shadow-lg ${
-          toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-        }`}>
-          {toast.message}
-        </div>
-      )}
+      {/* Toast notifications */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
 
       {/* Header */}
       <div className="flex justify-between items-center">

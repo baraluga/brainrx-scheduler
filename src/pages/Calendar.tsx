@@ -8,6 +8,8 @@ import OnboardStudentForm from "../components/calendar/OnboardStudentForm";
 import EditSessionForm from "../components/calendar/EditSessionForm";
 import Modal from "../components/common/Modal";
 import DailyGridView from "../components/calendar/DailyGridView";
+import { ToastContainer } from "../components/common/Toast";
+import { useToast } from "../hooks/useToast";
 
 function Calendar() {
   const [sessions, setSessions] = useState<Session[]>(
@@ -19,10 +21,7 @@ function Calendar() {
   const [isOnboardOpen, setIsOnboardOpen] = useState(false);
   const gridContainerRef = useRef<HTMLDivElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
+  const { toasts, removeToast, showSuccess, showError } = useToast();
   const [editing, setEditing] = useState<Session | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "daily-grid">("daily-grid");
   // Helpers to handle local date input values (YYYY-MM-DD) without UTC shifts
@@ -44,8 +43,11 @@ function Calendar() {
     message: string,
     type: "success" | "error" = "success"
   ) => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 5000);
+    if (type === "success") {
+      showSuccess(message);
+    } else {
+      showError(message);
+    }
   };
 
   const refreshSessions = () => {
@@ -184,18 +186,8 @@ function Calendar() {
 
   return (
     <div className="space-y-6">
-      {/* Toast notification */}
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg border ${
-            toast.type === "success"
-              ? "bg-primary-100 text-ink-700 border-primary-200"
-              : "bg-red-50 text-red-700 border-red-200"
-          }`}
-        >
-          {toast.message}
-        </div>
-      )}
+      {/* Toast notifications */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
 
       {/* Header */}
       <div className="flex flex-wrap justify-between items-start gap-4">
