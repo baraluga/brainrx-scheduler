@@ -262,6 +262,7 @@ export default function DailyGridView({
     conflict: boolean;
   } | null>(null);
   const [successFlashId, setSuccessFlashId] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   // Treat sessions as read-only if their scheduled end is in the past
   const isSessionPast = (s: Session): boolean => {
@@ -412,7 +413,7 @@ export default function DailyGridView({
   const gtColWidth = slotsPerType["gt"] * LANE_WIDTH;
 
   return (
-    <div className="bg-white shadow rounded-lg overflow-x-auto relative">
+    <div ref={containerRef} className="bg-white shadow rounded-lg overflow-x-auto relative">
       <div
         className="grid"
         style={{
@@ -1166,11 +1167,8 @@ export default function DailyGridView({
       </div>
       {dragHover && draggingSessionId && (
         <div
-          className={`absolute z-50 pointer-events-none text-[11px] font-bold px-2 py-1 rounded shadow ${dragHover.conflict ? 'bg-red-600 text-white ring-2 ring-red-300' : 'bg-ink-900 text-white'}`}
-          style={{
-            left: Math.max(8, dragHover.cursorX - (document.querySelector('.bg-white.shadow.rounded-lg')?.getBoundingClientRect().left || 0) + 12),
-            top: dragHover.cursorY - (document.querySelector('.bg-white.shadow.rounded-lg')?.getBoundingClientRect().top || 0) + 12,
-          }}
+          className={`fixed z-50 pointer-events-none text-[11px] font-bold px-2 py-1 rounded shadow ${dragHover.conflict ? 'bg-red-600 text-white ring-2 ring-red-300' : 'bg-ink-900 text-white'}`}
+          style={{ left: dragHover.cursorX + 12, top: dragHover.cursorY + 12 }}
         >
           {dragHover.conflict ? '⚠ ' : ''}
           {`Seat ${dragHover.seatNumber} • ${minsToLabel(dragHover.startMins)} – ${minsToLabel(dragHover.endMins)}`}
