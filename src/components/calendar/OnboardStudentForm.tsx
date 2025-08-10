@@ -39,9 +39,16 @@ const generateEndTimeOptions = (startTime?: string): string[] => {
   const maxEnd = Math.min(startMins + 120, BUSINESS_END_MINUTES)
   const options: string[] = []
   for (let t = minEnd; t <= maxEnd; t += INCREMENT) {
-    options.push(minutesToHHMM(t))
+    const duration = t - startMins
+    const displayText = `${minutesToHHMM(t)} (${duration} minutes)`
+    options.push(displayText)
   }
   return options
+}
+
+const toLocalDateInputValue = (d: Date): string => {
+  const tzOffset = d.getTimezoneOffset() * 60000
+  return new Date(d.getTime() - tzOffset).toISOString().slice(0, 10)
 }
 
 // Business days (Tue-Sat) per request
@@ -87,8 +94,10 @@ export default function OnboardStudentForm({ onCreated, onCancel }: Props) {
       const current = prev[dayKey] || { startTime: '', endTime: '' }
       const next = { ...current, ...patch }
       if (patch.startTime) {
-        const allowed = new Set(generateEndTimeOptions(patch.startTime))
-        if (!allowed.has(next.endTime)) next.endTime = ''
+        const allowedTimes = new Set(
+          generateEndTimeOptions(patch.startTime).map(t => t.split(' (')[0])
+        )
+        if (!allowedTimes.has(next.endTime)) next.endTime = ''
       }
       return { ...prev, [dayKey]: next }
     })
@@ -171,11 +180,29 @@ export default function OnboardStudentForm({ onCreated, onCancel }: Props) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-ink-700 mb-2">Start Date *</label>
-          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full border rounded-md px-3 py-2" />
+          <input
+            type="date"
+            value={startDate}
+            onChange={e => {
+              const v = e.target.value
+              setStartDate(v)
+              if (endDate && v && new Date(endDate) < new Date(v)) {
+                setEndDate(v)
+              }
+            }}
+            min={toLocalDateInputValue(new Date())}
+            className="w-full border rounded-md px-3 py-2"
+          />
         </div>
         <div>
           <label className="block text-sm font-medium text-ink-700 mb-2">End Date *</label>
-          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full border rounded-md px-3 py-2" />
+          <input
+            type="date"
+            value={endDate}
+            onChange={e => setEndDate(e.target.value)}
+            min={startDate || toLocalDateInputValue(new Date())}
+            className="w-full border rounded-md px-3 py-2"
+          />
         </div>
       </div>
 
@@ -209,7 +236,7 @@ export default function OnboardStudentForm({ onCreated, onCancel }: Props) {
                 <label className="block text-xs text-ink-500 mb-1">End</label>
                 <select value={slot.endTime} onChange={e => updateDaySlot(w.key, { endTime: e.target.value })} className="w-full border rounded-md px-3 py-2" disabled={!slot.startTime}>
                   <option value="">{slot.startTime ? 'Select end time' : 'Select start time first'}</option>
-                  {generateEndTimeOptions(slot.startTime).map(t => <option key={t} value={t}>{t}</option>)}
+                  {generateEndTimeOptions(slot.startTime).map(t => <option key={t} value={t.split(' (')[0]}>{t}</option>)}
                 </select>
               </div>
             </div>
