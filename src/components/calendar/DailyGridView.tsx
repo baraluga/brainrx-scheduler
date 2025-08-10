@@ -203,14 +203,7 @@ export default function DailyGridView({
     [trainers]
   );
 
-  // Tinted backgrounds per session type (distinct from trainer block colors)
-  const COLUMN_BG: Record<SessionType, string> = {
-    'training-tabletop': 'rgba(125, 211, 252, 0.12)',   // sky-400 @12%
-    'training-digital': 'rgba(129, 140, 248, 0.12)',    // indigo-400 @12%
-    'accelerate-rx': 'rgba(245, 158, 11, 0.12)',        // amber-500 @12%
-    'remote': 'rgba(52, 211, 153, 0.12)',               // emerald-400 @12%
-    'gt': 'rgba(192, 132, 252, 0.12)',                  // purple-400 @12%
-  }
+  // Column background colors removed for a cleaner, white grid
   const HEADER_BG: Record<SessionType, string> = {
     'training-tabletop': 'rgba(125, 211, 252, 0.35)',
     'training-digital': 'rgba(129, 140, 248, 0.35)',
@@ -619,7 +612,7 @@ export default function DailyGridView({
         </div>
         <div
           className="relative border-l border-gray-200"
-          style={{ height: gridHeight, width: ttColWidth, backgroundColor: COLUMN_BG['training-tabletop'] }}
+          style={{ height: gridHeight, width: ttColWidth }}
           onDragOver={(e) => {
             if (draggingSessionType !== 'training-tabletop') return;
             e.preventDefault();
@@ -742,7 +735,7 @@ export default function DailyGridView({
         </div>
         <div
           className="relative border-l border-gray-200"
-          style={{ height: gridHeight, width: dgColWidth, backgroundColor: COLUMN_BG['training-digital'] }}
+          style={{ height: gridHeight, width: dgColWidth }}
           onDragOver={(e) => {
             if (draggingSessionType !== 'training-digital') return;
             e.preventDefault();
@@ -860,7 +853,7 @@ export default function DailyGridView({
         </div>
         <div
           className="relative border-l border-gray-200"
-          style={{ height: gridHeight, width: arxColWidth, backgroundColor: COLUMN_BG['accelerate-rx'] }}
+          style={{ height: gridHeight, width: arxColWidth }}
           onDragOver={(e) => {
             if (draggingSessionType !== 'accelerate-rx') return;
             e.preventDefault();
@@ -978,7 +971,7 @@ export default function DailyGridView({
         </div>
         <div
           className="relative border-l border-gray-200"
-          style={{ height: gridHeight, width: rmColWidth, backgroundColor: COLUMN_BG['remote'] }}
+          style={{ height: gridHeight, width: rmColWidth }}
           onDragOver={(e) => {
             if (draggingSessionType !== 'remote') return;
             e.preventDefault();
@@ -1096,7 +1089,7 @@ export default function DailyGridView({
         </div>
         <div
           className="relative border-l border-gray-200"
-          style={{ height: gridHeight, width: gtColWidth, backgroundColor: COLUMN_BG['gt'] }}
+          style={{ height: gridHeight, width: gtColWidth }}
           onDragOver={(e) => {
             if (draggingSessionType !== 'gt') return;
             e.preventDefault();
