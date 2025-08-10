@@ -272,6 +272,22 @@ export default function DailyGridView({
     return end.getTime() < Date.now();
   };
 
+  // Minimum droppable start time (in minutes from midnight) for the current grid day.
+  // If not the same day as "date", returns null (no restriction).
+  const getMinDroppableStartMins = (): number | null => {
+    const today = new Date();
+    if (today.toDateString() !== dateKey) return null;
+    let nowMins = today.getHours() * 60 + today.getMinutes();
+    if (typeof nowOffsetMinutes === 'number') {
+      nowMins = (nowMins + nowOffsetMinutes + 1440) % 1440;
+    }
+    const floored = Math.max(
+      businessStartMinutes,
+      Math.min(businessEndMinutes, Math.floor(nowMins / incrementMinutes) * incrementMinutes)
+    );
+    return floored;
+  };
+
   const hasConflict = (
     sessionType: SessionType,
     seatNumber: number,
@@ -561,7 +577,9 @@ export default function DailyGridView({
             let startSlotIndex = Math.max(0, Math.floor(y / rowHeight));
             startSlotIndex = Math.min(startSlotIndex, totalSlots - durationSlots);
             const seatNumber = laneIndex + 1;
-            const startMins = businessStartMinutes + startSlotIndex * incrementMinutes;
+            let startMins = businessStartMinutes + startSlotIndex * incrementMinutes;
+            const minStart = getMinDroppableStartMins();
+            if (minStart !== null && startMins < minStart) startMins = minStart;
             const endMins = startMins + duration;
             const conflict = hasConflict('training-tabletop', seatNumber, startMins, endMins, draggingSessionId);
             setDragHover({ type: 'training-tabletop', laneIndex, startSlotIndex, cursorX: e.clientX, cursorY: e.clientY, seatNumber, startMins, endMins, conflict });
@@ -584,7 +602,9 @@ export default function DailyGridView({
               const totalSlots = Math.floor((businessEndMinutes - businessStartMinutes) / incrementMinutes);
               let startSlotIndex = Math.max(0, Math.floor(y / rowHeight));
               startSlotIndex = Math.min(startSlotIndex, totalSlots - durationSlots);
-              const startMins = businessStartMinutes + startSlotIndex * incrementMinutes;
+              let startMins = businessStartMinutes + startSlotIndex * incrementMinutes;
+              const minStart = getMinDroppableStartMins();
+              if (minStart !== null && startMins < minStart) startMins = minStart;
               const newStartTime = minutesToHHMM(startMins);
               const newEndTime = minutesToHHMM(startMins + duration);
               const newSeat = laneIndex + 1;
@@ -680,7 +700,9 @@ export default function DailyGridView({
             let startSlotIndex = Math.max(0, Math.floor(y / rowHeight));
             startSlotIndex = Math.min(startSlotIndex, totalSlots - durationSlots);
             const seatNumber = laneIndex + 1;
-            const startMins = businessStartMinutes + startSlotIndex * incrementMinutes;
+            let startMins = businessStartMinutes + startSlotIndex * incrementMinutes;
+            const minStart = getMinDroppableStartMins();
+            if (minStart !== null && startMins < minStart) startMins = minStart;
             const endMins = startMins + duration;
             const conflict = hasConflict('training-digital', seatNumber, startMins, endMins, draggingSessionId);
             setDragHover({ type: 'training-digital', laneIndex, startSlotIndex, cursorX: e.clientX, cursorY: e.clientY, seatNumber, startMins, endMins, conflict });
@@ -703,7 +725,9 @@ export default function DailyGridView({
               const totalSlots = Math.floor((businessEndMinutes - businessStartMinutes) / incrementMinutes);
               let startSlotIndex = Math.max(0, Math.floor(y / rowHeight));
               startSlotIndex = Math.min(startSlotIndex, totalSlots - durationSlots);
-              const startMins = businessStartMinutes + startSlotIndex * incrementMinutes;
+              let startMins = businessStartMinutes + startSlotIndex * incrementMinutes;
+              const minStart = getMinDroppableStartMins();
+              if (minStart !== null && startMins < minStart) startMins = minStart;
               const newStartTime = minutesToHHMM(startMins);
               const newEndTime = minutesToHHMM(startMins + duration);
               const newSeat = laneIndex + 1;
@@ -794,7 +818,9 @@ export default function DailyGridView({
             let startSlotIndex = Math.max(0, Math.floor(y / rowHeight));
             startSlotIndex = Math.min(startSlotIndex, totalSlots - durationSlots);
             const seatNumber = laneIndex + 1;
-            const startMins = businessStartMinutes + startSlotIndex * incrementMinutes;
+            let startMins = businessStartMinutes + startSlotIndex * incrementMinutes;
+            const minStart = getMinDroppableStartMins();
+            if (minStart !== null && startMins < minStart) startMins = minStart;
             const endMins = startMins + duration;
             const conflict = hasConflict('accelerate-rx', seatNumber, startMins, endMins, draggingSessionId);
             setDragHover({ type: 'accelerate-rx', laneIndex, startSlotIndex, cursorX: e.clientX, cursorY: e.clientY, seatNumber, startMins, endMins, conflict });
@@ -817,7 +843,9 @@ export default function DailyGridView({
               const totalSlots = Math.floor((businessEndMinutes - businessStartMinutes) / incrementMinutes);
               let startSlotIndex = Math.max(0, Math.floor(y / rowHeight));
               startSlotIndex = Math.min(startSlotIndex, totalSlots - durationSlots);
-              const startMins = businessStartMinutes + startSlotIndex * incrementMinutes;
+              let startMins = businessStartMinutes + startSlotIndex * incrementMinutes;
+              const minStart = getMinDroppableStartMins();
+              if (minStart !== null && startMins < minStart) startMins = minStart;
               const newStartTime = minutesToHHMM(startMins);
               const newEndTime = minutesToHHMM(startMins + duration);
               const newSeat = laneIndex + 1;
@@ -908,7 +936,9 @@ export default function DailyGridView({
             let startSlotIndex = Math.max(0, Math.floor(y / rowHeight));
             startSlotIndex = Math.min(startSlotIndex, totalSlots - durationSlots);
             const seatNumber = laneIndex + 1;
-            const startMins = businessStartMinutes + startSlotIndex * incrementMinutes;
+            let startMins = businessStartMinutes + startSlotIndex * incrementMinutes;
+            const minStart = getMinDroppableStartMins();
+            if (minStart !== null && startMins < minStart) startMins = minStart;
             const endMins = startMins + duration;
             const conflict = hasConflict('remote', seatNumber, startMins, endMins, draggingSessionId);
             setDragHover({ type: 'remote', laneIndex, startSlotIndex, cursorX: e.clientX, cursorY: e.clientY, seatNumber, startMins, endMins, conflict });
@@ -931,7 +961,9 @@ export default function DailyGridView({
               const totalSlots = Math.floor((businessEndMinutes - businessStartMinutes) / incrementMinutes);
               let startSlotIndex = Math.max(0, Math.floor(y / rowHeight));
               startSlotIndex = Math.min(startSlotIndex, totalSlots - durationSlots);
-              const startMins = businessStartMinutes + startSlotIndex * incrementMinutes;
+              let startMins = businessStartMinutes + startSlotIndex * incrementMinutes;
+              const minStart = getMinDroppableStartMins();
+              if (minStart !== null && startMins < minStart) startMins = minStart;
               const newStartTime = minutesToHHMM(startMins);
               const newEndTime = minutesToHHMM(startMins + duration);
               const newSeat = laneIndex + 1;
@@ -1022,7 +1054,9 @@ export default function DailyGridView({
             let startSlotIndex = Math.max(0, Math.floor(y / rowHeight));
             startSlotIndex = Math.min(startSlotIndex, totalSlots - durationSlots);
             const seatNumber = laneIndex + 1;
-            const startMins = businessStartMinutes + startSlotIndex * incrementMinutes;
+            let startMins = businessStartMinutes + startSlotIndex * incrementMinutes;
+            const minStart = getMinDroppableStartMins();
+            if (minStart !== null && startMins < minStart) startMins = minStart;
             const endMins = startMins + duration;
             const conflict = hasConflict('gt', seatNumber, startMins, endMins, draggingSessionId);
             setDragHover({ type: 'gt', laneIndex, startSlotIndex, cursorX: e.clientX, cursorY: e.clientY, seatNumber, startMins, endMins, conflict });
@@ -1045,7 +1079,9 @@ export default function DailyGridView({
               const totalSlots = Math.floor((businessEndMinutes - businessStartMinutes) / incrementMinutes);
               let startSlotIndex = Math.max(0, Math.floor(y / rowHeight));
               startSlotIndex = Math.min(startSlotIndex, totalSlots - durationSlots);
-              const startMins = businessStartMinutes + startSlotIndex * incrementMinutes;
+              let startMins = businessStartMinutes + startSlotIndex * incrementMinutes;
+              const minStart = getMinDroppableStartMins();
+              if (minStart !== null && startMins < minStart) startMins = minStart;
               const newStartTime = minutesToHHMM(startMins);
               const newEndTime = minutesToHHMM(startMins + duration);
               const newSeat = laneIndex + 1;
