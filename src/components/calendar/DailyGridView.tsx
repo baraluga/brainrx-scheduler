@@ -109,7 +109,7 @@ export default function DailyGridView({
   const dateKey = date.toDateString();
   const daySessions = useMemo(() => {
     return appointments.filter(
-      (a) => new Date(a.date).toDateString() === dateKey
+      (a) => new Date(a.date).toDateString() === dateKey && a.status !== 'cancelled'
     );
   }, [appointments, dateKey]);
 
@@ -263,6 +263,15 @@ export default function DailyGridView({
   } | null>(null);
   const [successFlashId, setSuccessFlashId] = useState<string | null>(null);
 
+  // Treat sessions as read-only if their scheduled end is in the past
+  const isSessionPast = (s: Session): boolean => {
+    const base = new Date(s.date);
+    const [eh, em] = s.endTime.split(":").map(Number);
+    const end = new Date(base);
+    end.setHours(eh, em, 0, 0);
+    return end.getTime() < Date.now();
+  };
+
   const hasConflict = (
     sessionType: SessionType,
     seatNumber: number,
@@ -316,12 +325,13 @@ export default function DailyGridView({
     //
 
     const isDragging = draggingSessionId === p.id;
+    const readOnly = isSessionPast(p) || p.status === 'cancelled';
     const isFlashingSuccess = successFlashId === p.id;
 
     return (
       <div
         key={p.id}
-        className={`group absolute px-2 py-1 rounded-md overflow-hidden shadow-sm hover:shadow-md transition ${onSeatChange ? 'cursor-grab active:cursor-grabbing hover:-translate-y-0.5' : 'cursor-default'} ${isDragging ? 'ring-2 ring-primary-500 opacity-85' : ''} ${isFlashingSuccess ? 'ring-2 ring-emerald-500' : ''}`}
+        className={`group absolute px-2 py-1 rounded-md overflow-hidden shadow-sm hover:shadow-md transition ${onSeatChange && !readOnly ? 'cursor-grab active:cursor-grabbing hover:-translate-y-0.5' : 'cursor-default'} ${isDragging ? 'ring-2 ring-primary-500 opacity-85' : ''} ${isFlashingSuccess ? 'ring-2 ring-emerald-500' : ''}`}
         style={{
           top: startOffset + BLOCK_GAP / 2,
           height,
@@ -333,9 +343,9 @@ export default function DailyGridView({
         title={`${studentName} — ${trainerNick}\n${p.startTime}–${p.endTime} (${p.status})`}
         onMouseEnter={() => handleMouseEnter(p.id)}
         onMouseLeave={() => handleMouseLeave(p.id)}
-        draggable={!!onSeatChange}
+        draggable={!!onSeatChange && !readOnly}
         onDragStart={(e) => {
-          if (!onSeatChange) return;
+          if (!onSeatChange || readOnly) return;
           setDraggingSessionId(p.id);
           setDraggingSessionType(p.sessionType);
           try {

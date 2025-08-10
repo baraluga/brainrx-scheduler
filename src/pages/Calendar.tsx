@@ -1,6 +1,10 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Session, Student, Trainer, SessionType } from "../types/index";
-import { listSessions, createSession, updateSession } from "../services/sessions";
+import {
+  listSessions,
+  createSession,
+  updateSession,
+} from "../services/sessions";
 import { listStudents } from "../services/students";
 import { listTrainers } from "../services/trainers";
 import SessionForm from "../components/sessions/SessionForm";
@@ -12,9 +16,7 @@ import { ToastContainer } from "../components/common/Toast";
 import { useToast } from "../hooks/useToast";
 
 function Calendar() {
-  const [sessions, setSessions] = useState<Session[]>(
-    listSessions()
-  );
+  const [sessions, setSessions] = useState<Session[]>(listSessions());
   const [students] = useState<Student[]>(listStudents());
   const [trainers] = useState<Trainer[]>(listTrainers());
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -422,8 +424,7 @@ function Calendar() {
                                 <div className="text-sm text-gray-700">
                                   {formatTime(session.startTime)} -{" "}
                                   {formatTime(session.endTime)} •{" "}
-                                  {getStudentName(session)}{" "}
-                                  (Trainer:{" "}
+                                  {getStudentName(session)} (Trainer:{" "}
                                   {getTrainerName(session.trainerId)})
                                 </div>
                               </div>
@@ -453,7 +454,7 @@ function Calendar() {
             appointments={sessions}
             students={students}
             trainers={trainers}
-            config={{ ...GRID_CONFIG, nowOffsetMinutes: 600 }}
+            config={{ ...GRID_CONFIG }}
             onSelect={(session) => setEditing(session)}
             onSeatChange={(session, newSeat) => {
               try {
@@ -461,7 +462,7 @@ function Calendar() {
                 refreshSessions();
                 // No snackbar; subtle success handled in grid itself
               } catch (e) {
-                showToast('Failed to change seat', 'error');
+                showToast("Failed to change seat", "error");
               }
             }}
             onMove={(session, newSeat, newStartTime, newEndTime) => {
@@ -473,7 +474,7 @@ function Calendar() {
                 });
                 refreshSessions();
               } catch (e) {
-                showToast('Failed to move session', 'error');
+                showToast("Failed to move session", "error");
               }
             }}
           />
@@ -526,6 +527,11 @@ function Calendar() {
               showToast("Session updated");
             }}
             onCancel={() => setEditing(null)}
+            onCancelled={() => {
+              refreshSessions();
+              setEditing(null);
+              showToast("Session cancelled");
+            }}
           />
         )}
       </Modal>

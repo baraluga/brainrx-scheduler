@@ -11,6 +11,7 @@ type Props = {
   initial: Session;
   onSaved: (updated: Session) => void;
   onCancel: () => void;
+  onCancelled?: () => void;
 };
 
 const BUSINESS_START_MINUTES = 10 * 60;
@@ -85,7 +86,7 @@ const generateEndTimeOptions = (startTime?: string): string[] => {
 // preselect a value that preserves duration when start time changes.
 
 
-export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
+export default function EditSessionForm({ initial, onSaved, onCancel, onCancelled }: Props) {
   const [trainers] = useState<Trainer[]>(listTrainers());
   const [students] = useState(listStudents());
   const [existingSessions] = useState<Session[]>(listSessions());
@@ -110,6 +111,19 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
       gt: 4,
     } as Record<string, number>,
   };
+
+  // Determine if this session is in the past based on its original scheduled end
+  const isEditingLocked = useMemo(() => {
+    try {
+      const baseDate = new Date(initial.date);
+      const [eh, em] = initial.endTime.split(":").map(Number);
+      const end = new Date(baseDate);
+      end.setHours(eh, em, 0, 0);
+      return end.getTime() < Date.now() || initial.status === 'cancelled';
+    } catch {
+      return initial.status === 'cancelled';
+    }
+  }, [initial.date, initial.endTime, initial.status]);
 
   // Check if this is a training session that can be converted
   const isTrainingSession =
@@ -217,6 +231,7 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
   }, [trainerId, date, startTime, endTime, assignedSeat, availableSeats]);
 
   const onChangeStart = (val: string) => {
+    if (isEditingLocked) return;
     const oldStartTime = startTime;
     const oldEndTime = endTime;
     
@@ -248,6 +263,7 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
   };
 
   const onChangeEnd = (val: string) => {
+    if (isEditingLocked) return;
     const oldStartTime = startTime;
     const oldEndTime = endTime;
     
@@ -273,6 +289,7 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
 
 
   const onChangeDate = (val: string) => {
+    if (isEditingLocked) return;
     setDate(val);
     setAssignedSeat(0); // Reset seat when date changes
   };
@@ -295,6 +312,10 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (isEditingLocked) {
+      setError('This session can no longer be edited.');
+      return;
+    }
     const v = validateTimeSlot(startTime, endTime);
     if (!v.ok) {
       setError(v.message);
@@ -314,6 +335,22 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
       setError("Failed to save. Please try again.");
       // eslint-disable-next-line no-console
       console.error("Edit session save failed", err);
+    }
+  };
+
+  const handleCancelSession = () => {
+    try {
+      const updated = updateSession(initial.id, { status: 'cancelled' });
+      // Prefer dedicated callback for caller to show the appropriate toast
+      if (onCancelled) {
+        onCancelled();
+      } else {
+        onSaved(updated);
+      }
+    } catch (err) {
+      setError('Failed to cancel session. Please try again.');
+      // eslint-disable-next-line no-console
+      console.error('Cancel session failed', err);
     }
   };
 
@@ -341,6 +378,11 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
             </span>
           </div>
         </div>
+        {isEditingLocked && (
+          <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+            {initial.status === 'cancelled' ? 'This session has been cancelled and cannot be edited.' : 'This session is in the past and cannot be edited.'}
+          </div>
+        )}
       </div>
 
       {/* Switch Training Type */}
@@ -369,6 +411,7 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
                 title={`Switch to ${
                   sessionType === "training-tabletop" ? "Digital" : "Table-top"
                 }`}
+                disabled={isEditingLocked}
               >
                 <span
                   className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
@@ -436,7 +479,7 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
             onBlur={() => setTimeout(() => setShowTrainerDropdown(false), 200)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
             placeholder="Search for a trainer..."
-            disabled={availableTrainers.length === 0}
+            disabled={availableTrainers.length === 0 || isEditingLocked}
           />
           {showTrainerDropdown && availableTrainers.length > 0 && (
             <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
@@ -476,6 +519,7 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
         <div
           className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white cursor-pointer"
           onClick={() => {
+            if (isEditingLocked) return;
             const el = document.getElementById(
               "edit-date"
             ) as HTMLInputElement | null;
@@ -495,6 +539,7 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
             value={date}
             onChange={(e) => onChangeDate(e.target.value)}
             className="w-full bg-transparent outline-none"
+            disabled={isEditingLocked}
           />
         </div>
       </div>
@@ -514,6 +559,7 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
               value={startTime}
               onChange={(e) => onChangeStart(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+              disabled={isEditingLocked}
             >
               {generateStartTimeOptions().map((t) => (
                 <option key={t} value={t}>
@@ -534,7 +580,7 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
               value={endTime}
               onChange={(e) => onChangeEnd(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-              disabled={!startTime}
+              disabled={isEditingLocked || !startTime}
             >
               <option value="">
                 {startTime ? "Select end time" : "Select start time first"}
@@ -564,7 +610,7 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
           value={assignedSeat}
           onChange={(e) => setAssignedSeat(Number(e.target.value))}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-          disabled={availableSeats.length === 0}
+          disabled={availableSeats.length === 0 || isEditingLocked}
         >
           <option value={0}>
             {availableSeats.length === 0
@@ -590,12 +636,24 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
         )}
       </div>
 
-      <div className="flex gap-3 pt-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-4">
+        <button
+          type="button"
+          onClick={handleCancelSession}
+          disabled={initial.status === 'cancelled' || isEditingLocked}
+          className={`sm:flex-1 py-2 px-4 rounded-md font-medium border transition-colors ${
+            initial.status === 'cancelled' || isEditingLocked
+              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+              : 'bg-red-600 hover:bg-red-700 text-white'
+          }`}
+        >
+          Cancel Session
+        </button>
         <button
           type="submit"
-          disabled={!canSave}
+          disabled={isEditingLocked || !canSave}
           className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${
-            canSave
+            !isEditingLocked && canSave
               ? "bg-primary-600 hover:bg-primary-700 text-white"
               : "bg-gray-300 text-gray-500 cursor-not-allowed"
           }`}
@@ -607,7 +665,7 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
           onClick={onCancel}
           className="flex-1 py-2 px-4 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
         >
-          Cancel
+          Close
         </button>
       </div>
     </form>
