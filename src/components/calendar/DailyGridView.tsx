@@ -247,6 +247,7 @@ export default function DailyGridView({
     const studentObj = students.find((s) => s.id === p.studentId);
     const studentName = studentObj?.firstName || getName(p.studentId, students);
     const trainerNick = trainer?.firstName || getName(p.trainerId, trainers);
+    const isTrainingSession = p.sessionType === 'training-tabletop' || p.sessionType === 'training-digital';
 
     return (
       <div
