@@ -24,7 +24,8 @@ export interface Trainer extends User {
 
 export interface Session {
   id: string
-  studentId: string
+  studentId?: string // Made optional for GT sessions
+  clientName?: string // Added for GT sessions (prospects)
   trainerId: string
   sessionType: SessionType
   assignedSeat: number

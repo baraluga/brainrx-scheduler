@@ -13,6 +13,7 @@ interface SessionFormData {
   endTime: string
   assignedSeat: number | ''
   studentId: string
+  clientName: string // Added for GT sessions
   trainerId: string
   notes: string
 }
@@ -25,6 +26,7 @@ interface SessionFormErrors {
   timeSlot?: string
   assignedSeat?: string
   studentId?: string
+  clientName?: string
   trainerId?: string
 }
 
@@ -100,6 +102,7 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
     endTime: initial?.endTime || '',
     assignedSeat: initial?.assignedSeat || '',
     studentId: initial?.studentId || '',
+    clientName: initial?.clientName || '',
     trainerId: initial?.trainerId || '',
     notes: initial?.notes || ''
   })
@@ -188,7 +191,17 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
         break
       
       case 'studentId':
-        if (!value) return 'Student is required'
+        // Non-GT sessions always require a student
+        if (formData.sessionType !== 'gt' && !value) {
+          return 'Student is required'
+        }
+        break
+      
+      case 'clientName':
+        // GT sessions always require a client name
+        if (formData.sessionType === 'gt' && !value) {
+          return 'Client name is required for GT sessions'
+        }
         break
       
       case 'trainerId':
@@ -221,6 +234,7 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
     newErrors.endTime = validateField('endTime', formData.endTime)
     newErrors.assignedSeat = validateField('assignedSeat', String(formData.assignedSeat))
     newErrors.studentId = validateField('studentId', formData.studentId)
+    newErrors.clientName = validateField('clientName', formData.clientName)
     newErrors.trainerId = validateField('trainerId', formData.trainerId)
     
     // Validate time slot
@@ -235,8 +249,11 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
     
     // Clear trainer selection if session type changes
     if (field === 'sessionType') {
-      setFormData(prev => ({ ...prev, trainerId: '', assignedSeat: '' }))
+      setFormData(prev => ({ ...prev, trainerId: '', assignedSeat: '', studentId: '', clientName: '' }))
       setTrainerSearch('')
+      setStudentSearch('')
+      // Clear errors when switching session types
+      setErrors(prev => ({ ...prev, studentId: undefined, clientName: undefined }))
     }
 
     // If start time changes, ensure end time remains valid; otherwise clear it
@@ -282,7 +299,8 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
       date: new Date(formData.date).toISOString(),
       startTime: formData.startTime,
       endTime: formData.endTime,
-      studentId: formData.studentId,
+      studentId: formData.sessionType === 'gt' ? undefined : formData.studentId,
+      clientName: formData.sessionType === 'gt' ? formData.clientName : undefined,
       trainerId: formData.trainerId,
       notes: formData.notes.trim() || undefined,
       progress: undefined
@@ -306,57 +324,6 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Student */}
-      <div className="relative">
-        <label htmlFor="studentId" className="block text-sm font-medium text-gray-700 mb-2">
-          Student *
-        </label>
-        <div className="relative">
-          <input
-            type="text"
-            value={formData.studentId ? getStudentDisplayName(formData.studentId) : studentSearch}
-            onChange={(e) => {
-              setStudentSearch(e.target.value)
-              if (formData.studentId) {
-                setFormData(prev => ({ ...prev, studentId: '' }))
-              }
-            }}
-            onFocus={() => setShowStudentDropdown(true)}
-            onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-              errors.studentId ? 'border-red-500' : 'border-gray-300'
-            }`}
-            placeholder="Search for a student..."
-            aria-invalid={!!errors.studentId}
-          />
-          {showStudentDropdown && (
-            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
-              {filteredStudents.length === 0 ? (
-                <div className="px-3 py-2 text-sm text-gray-500">No students found</div>
-              ) : (
-                filteredStudents.map((student) => (
-                  <button
-                    key={student.id}
-                    type="button"
-                    onClick={() => {
-                      setFormData(prev => ({ ...prev, studentId: student.id }))
-                      setStudentSearch('')
-                      setShowStudentDropdown(false)
-                    }}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 focus:bg-gray-50"
-                  >
-                    {student.firstName || student.name}
-                  </button>
-                ))
-              )}
-            </div>
-          )}
-        </div>
-        {errors.studentId && (
-          <p className="mt-1 text-sm text-red-600">{errors.studentId}</p>
-        )}
-      </div>
-
       {/* Session Type */}
       <div>
         <label htmlFor="sessionType" className="block text-sm font-medium text-gray-700 mb-2">
@@ -381,6 +348,83 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
           <p className="mt-1 text-sm text-red-600">{errors.sessionType}</p>
         )}
       </div>
+
+      {/* Student/Client Name */}
+      {formData.sessionType === 'gt' ? (
+        <div>
+          <label htmlFor="clientName" className="block text-sm font-medium text-gray-700 mb-2">
+            Client Name *
+          </label>
+          <input
+            type="text"
+            id="clientName"
+            value={formData.clientName}
+            onChange={(e) => {
+              const value = e.target.value
+              handleFieldChange('clientName', value)
+            }}
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+              errors.clientName ? 'border-red-500' : 'border-gray-300'
+            }`}
+            placeholder="Enter prospect's name..."
+            aria-invalid={!!errors.clientName}
+            required
+          />
+          {errors.clientName && (
+            <p className="mt-1 text-sm text-red-600">{errors.clientName}</p>
+          )}
+        </div>
+      ) : (
+        <div className="relative">
+          <label htmlFor="studentId" className="block text-sm font-medium text-gray-700 mb-2">
+            Student *
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              value={formData.studentId ? getStudentDisplayName(formData.studentId) : studentSearch}
+              onChange={(e) => {
+                setStudentSearch(e.target.value)
+                if (formData.studentId) {
+                  setFormData(prev => ({ ...prev, studentId: '' }))
+                }
+              }}
+              onFocus={() => setShowStudentDropdown(true)}
+              onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                errors.studentId ? 'border-red-500' : 'border-gray-300'
+              }`}
+              placeholder="Search for a student..."
+              aria-invalid={!!errors.studentId}
+            />
+            {showStudentDropdown && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                {filteredStudents.length === 0 ? (
+                  <div className="px-3 py-2 text-sm text-gray-500">No students found</div>
+                ) : (
+                  filteredStudents.map((student) => (
+                    <button
+                      key={student.id}
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, studentId: student.id }))
+                        setStudentSearch('')
+                        setShowStudentDropdown(false)
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 focus:bg-gray-50"
+                    >
+                      {student.firstName || student.name}
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+          {errors.studentId && (
+            <p className="mt-1 text-sm text-red-600">{errors.studentId}</p>
+          )}
+        </div>
+      )}
 
       {/* Date */}
       <div>

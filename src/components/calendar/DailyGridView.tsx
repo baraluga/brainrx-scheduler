@@ -245,7 +245,7 @@ export default function DailyGridView({
     const color = trainerColorMap.get(p.trainerId) || TRAINER_COLORS[0];
     const borderColor = trainer?.canDoGtAssessments ? "#2563eb" : "#6b7280"; // blue if GT-capable, gray otherwise
     const studentObj = students.find((s) => s.id === p.studentId);
-    const studentName = studentObj?.firstName || getName(p.studentId, students);
+    const studentName = studentObj?.firstName || p.clientName || getName(p.studentId || '', students);
     const trainerNick = trainer?.firstName || getName(p.trainerId, trainers);
     const isTrainingSession = p.sessionType === 'training-tabletop' || p.sessionType === 'training-digital';
 

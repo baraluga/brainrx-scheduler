@@ -103,8 +103,14 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
   };
 
   const getStudentName = () => {
-    const student = students.find((s) => s.id === initial.studentId);
-    return student?.firstName || student?.name || "Unknown Student";
+    if (initial.studentId) {
+      const student = students.find((s) => s.id === initial.studentId);
+      return student?.firstName || student?.name || "Unknown Student";
+    }
+    if (initial.clientName) {
+      return initial.clientName;
+    }
+    return "Unknown Client";
   };
 
   const getSessionTypeDisplay = (type = sessionType) => {

@@ -158,9 +158,15 @@ function Calendar() {
     }
   };
 
-  const getStudentName = (studentId: string) => {
-    const s = students.find((x) => x.id === studentId);
-    return s?.firstName || s?.name || "Unknown Student";
+  const getStudentName = (session: Session) => {
+    if (session.studentId) {
+      const s = students.find((x) => x.id === session.studentId);
+      return s?.firstName || s?.name || "Unknown Student";
+    }
+    if (session.clientName) {
+      return session.clientName;
+    }
+    return "Unknown Client";
   };
 
   const getTrainerName = (trainerId: string) => {
@@ -372,7 +378,7 @@ function Calendar() {
                               </span>
                             </div>
                             <div className="mt-1 text-sm text-gray-600">
-                              {getStudentName(session.studentId)}
+                              {getStudentName(session)}
                             </div>
                             <div className="text-xs text-gray-500">
                               Trainer: {getTrainerName(session.trainerId)}
@@ -416,7 +422,7 @@ function Calendar() {
                                 <div className="text-sm text-gray-700">
                                   {formatTime(session.startTime)} -{" "}
                                   {formatTime(session.endTime)} •{" "}
-                                  {getStudentName(session.studentId)}{" "}
+                                  {getStudentName(session)}{" "}
                                   (Trainer:{" "}
                                   {getTrainerName(session.trainerId)})
                                 </div>
