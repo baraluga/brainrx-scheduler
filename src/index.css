@@ -39,6 +39,15 @@
   animation: live-gradient-x 8s ease-in-out infinite;
 }
 
+/* Hide native scrollbars while keeping scroll functionality */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
+}
+
 /* Read-only (past) session appearance */
 .session-readonly {
   filter: grayscale(0.35) brightness(0.96);

@@ -348,6 +348,7 @@ export default function DailyGridView({
     return (
       <div
         key={p.id}
+        data-session-block="1"
         className={`group absolute px-2 py-1 rounded-md overflow-hidden shadow-sm hover:shadow-md transition ${onSeatChange && !readOnly ? 'cursor-grab active:cursor-grabbing hover:-translate-y-0.5' : 'cursor-default'} ${readOnly ? 'session-readonly' : ''} ${isDragging ? 'ring-2 ring-primary-500 opacity-85' : ''} ${isFlashingSuccess ? 'ring-2 ring-emerald-500 animate-pulse' : ''}`}
         style={{
           top: startOffset + BLOCK_GAP / 2,
@@ -412,10 +413,57 @@ export default function DailyGridView({
   const rmColWidth = slotsPerType["remote"] * LANE_WIDTH;
   const gtColWidth = slotsPerType["gt"] * LANE_WIDTH;
 
+  // Drag-to-pan state
+  const [isPanning, setIsPanning] = useState(false);
+  const panStart = useRef<{ x: number; y: number; scrollLeft: number; scrollTop: number } | null>(null);
+
+  const handlePanStart = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Start panning only when clicking empty space (not on a session block)
+    const target = e.target as HTMLElement;
+    const isBlock = target.closest('[data-session-block="1"]');
+    if (isBlock) return;
+    setIsPanning(true);
+    const el = containerRef.current;
+    if (!el) return;
+    panStart.current = {
+      x: e.clientX,
+      y: e.clientY,
+      scrollLeft: el.scrollLeft,
+      scrollTop: el.scrollTop,
+    };
+    el.style.cursor = 'grabbing';
+  };
+
+  const handlePanMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isPanning || !panStart.current) return;
+    const el = containerRef.current;
+    if (!el) return;
+    const dx = e.clientX - panStart.current.x;
+    const dy = e.clientY - panStart.current.y;
+    // Drag left moves content left → we scroll right
+    el.scrollLeft = panStart.current.scrollLeft - dx;
+    el.scrollTop = panStart.current.scrollTop - dy;
+  };
+
+  const handlePanEnd = () => {
+    setIsPanning(false);
+    panStart.current = null;
+    const el = containerRef.current;
+    if (el) el.style.cursor = '';
+  };
+
   return (
-    <div ref={containerRef} className="bg-white shadow rounded-lg overflow-x-auto relative">
+    <div
+      ref={containerRef}
+      className="bg-white shadow rounded-lg overflow-auto no-scrollbar relative"
+      onMouseDown={handlePanStart}
+      onMouseMove={handlePanMove}
+      onMouseUp={handlePanEnd}
+      onMouseLeave={handlePanEnd}
+      style={{ cursor: isPanning ? 'grabbing' : undefined }}
+    >
       <div
-        className="grid"
+        className="grid select-none"
         style={{
           gridTemplateColumns: `120px ${ttColWidth}px ${dgColWidth}px ${arxColWidth}px ${rmColWidth}px ${gtColWidth}px`,
         }}
