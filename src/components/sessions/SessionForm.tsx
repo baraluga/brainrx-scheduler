@@ -70,20 +70,14 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
     const maxEnd = Math.min(startMins + 120, BUSINESS_END_MINUTES)
     const options: string[] = []
     for (let t = minEnd; t <= maxEnd; t += INCREMENT) {
-      options.push(minutesToHHMM(t))
+      const duration = t - startMins
+      const displayText = `${minutesToHHMM(t)} (${duration} minutes)`
+      options.push(displayText)
     }
     return options
   }
 
-  const setQuickTimeSlot = (durationMinutes: number) => {
-    if (!formData.startTime) return
-    const [sh, sm] = formData.startTime.split(':').map(Number)
-    const startMins = sh * 60 + sm
-    const endMins = Math.min(startMins + durationMinutes, BUSINESS_END_MINUTES)
-    const endTime = minutesToHHMM(endMins)
-    setFormData(prev => ({ ...prev, endTime, assignedSeat: '' }))
-    setErrors(prev => ({ ...prev, endTime: undefined, timeSlot: undefined }))
-  }
+
 
   const SEAT_CONFIG = {
     slotsPerType: {
@@ -505,7 +499,11 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
             <select
               id="endTime"
               value={formData.endTime}
-              onChange={(e) => handleFieldChange('endTime', e.target.value)}
+              onChange={(e) => {
+                // Extract just the time part (before the duration suffix)
+                const timeValue = e.target.value.split(' (')[0]
+                handleFieldChange('endTime', timeValue)
+              }}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
                 errors.endTime ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -515,7 +513,9 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
             >
               <option value="">{formData.startTime ? 'Select end time' : 'Select start time first'}</option>
               {generateEndTimeOptions(formData.startTime).map((t) => (
-                <option key={t} value={t}>{t}</option>
+                <option key={t} value={t.split(' (')[0]}>
+                  {t}
+                </option>
               ))}
             </select>
             {errors.endTime && (
@@ -524,43 +524,7 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
           </div>
         </div>
         
-        {formData.startTime && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Quick Duration
-            </label>
-            <div className="flex gap-2 flex-wrap">
-              <button
-                type="button"
-                onClick={() => setQuickTimeSlot(30)}
-                className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-              >
-                30 min
-              </button>
-              <button
-                type="button"
-                onClick={() => setQuickTimeSlot(45)}
-                className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-              >
-                45 min
-              </button>
-              <button
-                type="button"
-                onClick={() => setQuickTimeSlot(60)}
-                className="px-3 py-1 text-xs bg-primary-100 border border-primary-300 text-primary-700 rounded hover:bg-primary-200 transition-colors font-medium"
-              >
-                1 hour
-              </button>
-              <button
-                type="button"
-                onClick={() => setQuickTimeSlot(90)}
-                className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-              >
-                90 min
-              </button>
-            </div>
-          </div>
-        )}
+
       </div>
 
       {/* Time slot validation error */}
