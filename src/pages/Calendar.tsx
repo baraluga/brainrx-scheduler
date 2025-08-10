@@ -464,6 +464,18 @@ function Calendar() {
                 showToast('Failed to change seat', 'error');
               }
             }}
+            onMove={(session, newSeat, newStartTime, newEndTime) => {
+              try {
+                updateSession(session.id, {
+                  assignedSeat: newSeat,
+                  startTime: newStartTime,
+                  endTime: newEndTime,
+                });
+                refreshSessions();
+              } catch (e) {
+                showToast('Failed to move session', 'error');
+              }
+            }}
           />
         </div>
       )}

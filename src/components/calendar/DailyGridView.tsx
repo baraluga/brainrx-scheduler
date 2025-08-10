@@ -18,6 +18,12 @@ type DailyGridViewProps = {
   config: DailyGridConfig;
   onSelect?: (session: Session) => void;
   onSeatChange?: (session: Session, newSeat: number) => void;
+  onMove?: (
+    session: Session,
+    newSeat: number,
+    newStartTime: string,
+    newEndTime: string
+  ) => void;
 };
 
 type PositionedSession = Session & {
@@ -89,6 +95,7 @@ export default function DailyGridView({
   config,
   onSelect,
   onSeatChange,
+  onMove,
 }: DailyGridViewProps) {
   const {
     businessStartMinutes,
@@ -119,6 +126,12 @@ export default function DailyGridView({
     const period = h >= 12 ? "PM" : "AM";
     const hh = h % 12 === 0 ? 12 : h % 12;
     return `${hh}:${String(m).padStart(2, "0")} ${period}`;
+  };
+
+  const minutesToHHMM = (mins: number): string => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   };
 
   const timeSlots = useMemo(() => {
@@ -237,7 +250,11 @@ export default function DailyGridView({
   const hoverTimerRef = useRef<number | null>(null);
   const [draggingSessionId, setDraggingSessionId] = useState<string | null>(null);
   const [draggingSessionType, setDraggingSessionType] = useState<SessionType | null>(null);
-  const [dragHover, setDragHover] = useState<{ type: SessionType; laneIndex: number } | null>(null);
+  const [dragHover, setDragHover] = useState<{
+    type: SessionType;
+    laneIndex: number;
+    startSlotIndex: number;
+  } | null>(null);
   const [successFlashId, setSuccessFlashId] = useState<string | null>(null);
 
   const handleMouseEnter = (sessionId: string) => {
@@ -501,8 +518,16 @@ export default function DailyGridView({
             e.preventDefault();
             const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
             const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
             const laneIndex = Math.max(0, Math.min(Math.floor(x / LANE_WIDTH), slotsPerType['training-tabletop'] - 1));
-            setDragHover({ type: 'training-tabletop', laneIndex });
+            const dragging = daySessions.find((s) => s.id === draggingSessionId);
+            if (!dragging) return;
+            const duration = minutesBetween(dragging.startTime, dragging.endTime);
+            const durationSlots = Math.max(1, Math.round(duration / incrementMinutes));
+            const totalSlots = Math.floor((businessEndMinutes - businessStartMinutes) / incrementMinutes);
+            let startSlotIndex = Math.max(0, Math.floor(y / rowHeight));
+            startSlotIndex = Math.min(startSlotIndex, totalSlots - durationSlots);
+            setDragHover({ type: 'training-tabletop', laneIndex, startSlotIndex });
           }}
           onDragLeave={() => {
             if (draggingSessionType !== 'training-tabletop') return;
@@ -513,15 +538,26 @@ export default function DailyGridView({
             e.preventDefault();
             const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
             const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
             const laneIndex = Math.max(0, Math.min(Math.floor(x / LANE_WIDTH), slotsPerType['training-tabletop'] - 1));
             const session = daySessions.find((s) => s.id === draggingSessionId);
             if (session && session.sessionType === 'training-tabletop') {
+              const duration = minutesBetween(session.startTime, session.endTime);
+              const durationSlots = Math.max(1, Math.round(duration / incrementMinutes));
+              const totalSlots = Math.floor((businessEndMinutes - businessStartMinutes) / incrementMinutes);
+              let startSlotIndex = Math.max(0, Math.floor(y / rowHeight));
+              startSlotIndex = Math.min(startSlotIndex, totalSlots - durationSlots);
+              const startMins = businessStartMinutes + startSlotIndex * incrementMinutes;
+              const newStartTime = minutesToHHMM(startMins);
+              const newEndTime = minutesToHHMM(startMins + duration);
               const newSeat = laneIndex + 1;
-              if (newSeat !== session.assignedSeat) {
+              if (onMove) {
+                onMove(session, newSeat, newStartTime, newEndTime);
+              } else if (onSeatChange && newSeat !== session.assignedSeat) {
                 onSeatChange(session, newSeat);
-                setSuccessFlashId(session.id);
-                window.setTimeout(() => setSuccessFlashId((id) => (id === session.id ? null : id)), 700);
               }
+              setSuccessFlashId(session.id);
+              window.setTimeout(() => setSuccessFlashId((id) => (id === session.id ? null : id)), 700);
             }
             setDragHover(null);
             setDraggingSessionId(null);
@@ -553,12 +589,20 @@ export default function DailyGridView({
           {/* Hover lane indicator (drag) */}
           {dragHover && draggingSessionType === 'training-tabletop' && dragHover.type === 'training-tabletop' && (
             <div
-              className="absolute top-0 bottom-0 pointer-events-none"
+              className="absolute pointer-events-none rounded-md"
               style={{
                 left: dragHover.laneIndex * LANE_WIDTH,
+                top: dragHover.startSlotIndex * rowHeight,
                 width: LANE_WIDTH,
-                backgroundColor: 'rgba(255,255,255,0.25)',
-                outline: '2px dashed rgba(55, 65, 81, 0.6)',
+                height:
+                  (() => {
+                    const s = daySessions.find((d) => d.id === draggingSessionId);
+                    if (!s) return rowHeight;
+                    const dMins = minutesBetween(s.startTime, s.endTime);
+                    return Math.max(6, (dMins / incrementMinutes) * rowHeight - BLOCK_GAP);
+                  })(),
+                backgroundColor: 'rgba(255,255,255,0.35)',
+                outline: '2px dashed rgba(55, 65, 81, 0.55)',
                 outlineOffset: '-2px',
               }}
             />
@@ -581,8 +625,16 @@ export default function DailyGridView({
             e.preventDefault();
             const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
             const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
             const laneIndex = Math.max(0, Math.min(Math.floor(x / LANE_WIDTH), slotsPerType['training-digital'] - 1));
-            setDragHover({ type: 'training-digital', laneIndex });
+            const dragging = daySessions.find((s) => s.id === draggingSessionId);
+            if (!dragging) return;
+            const duration = minutesBetween(dragging.startTime, dragging.endTime);
+            const durationSlots = Math.max(1, Math.round(duration / incrementMinutes));
+            const totalSlots = Math.floor((businessEndMinutes - businessStartMinutes) / incrementMinutes);
+            let startSlotIndex = Math.max(0, Math.floor(y / rowHeight));
+            startSlotIndex = Math.min(startSlotIndex, totalSlots - durationSlots);
+            setDragHover({ type: 'training-digital', laneIndex, startSlotIndex });
           }}
           onDragLeave={() => {
             if (draggingSessionType !== 'training-digital') return;
@@ -593,15 +645,26 @@ export default function DailyGridView({
             e.preventDefault();
             const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
             const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
             const laneIndex = Math.max(0, Math.min(Math.floor(x / LANE_WIDTH), slotsPerType['training-digital'] - 1));
             const session = daySessions.find((s) => s.id === draggingSessionId);
             if (session && session.sessionType === 'training-digital') {
+              const duration = minutesBetween(session.startTime, session.endTime);
+              const durationSlots = Math.max(1, Math.round(duration / incrementMinutes));
+              const totalSlots = Math.floor((businessEndMinutes - businessStartMinutes) / incrementMinutes);
+              let startSlotIndex = Math.max(0, Math.floor(y / rowHeight));
+              startSlotIndex = Math.min(startSlotIndex, totalSlots - durationSlots);
+              const startMins = businessStartMinutes + startSlotIndex * incrementMinutes;
+              const newStartTime = minutesToHHMM(startMins);
+              const newEndTime = minutesToHHMM(startMins + duration);
               const newSeat = laneIndex + 1;
-              if (newSeat !== session.assignedSeat) {
+              if (onMove) {
+                onMove(session, newSeat, newStartTime, newEndTime);
+              } else if (onSeatChange && newSeat !== session.assignedSeat) {
                 onSeatChange(session, newSeat);
-                setSuccessFlashId(session.id);
-                window.setTimeout(() => setSuccessFlashId((id) => (id === session.id ? null : id)), 700);
               }
+              setSuccessFlashId(session.id);
+              window.setTimeout(() => setSuccessFlashId((id) => (id === session.id ? null : id)), 700);
             }
             setDragHover(null);
             setDraggingSessionId(null);
@@ -631,12 +694,20 @@ export default function DailyGridView({
           ))}
           {dragHover && draggingSessionType === 'training-digital' && dragHover.type === 'training-digital' && (
             <div
-              className="absolute top-0 bottom-0 pointer-events-none"
+              className="absolute pointer-events-none rounded-md"
               style={{
                 left: dragHover.laneIndex * LANE_WIDTH,
+                top: dragHover.startSlotIndex * rowHeight,
                 width: LANE_WIDTH,
-                backgroundColor: 'rgba(255,255,255,0.25)',
-                outline: '2px dashed rgba(55, 65, 81, 0.6)',
+                height:
+                  (() => {
+                    const s = daySessions.find((d) => d.id === draggingSessionId);
+                    if (!s) return rowHeight;
+                    const dMins = minutesBetween(s.startTime, s.endTime);
+                    return Math.max(6, (dMins / incrementMinutes) * rowHeight - BLOCK_GAP);
+                  })(),
+                backgroundColor: 'rgba(255,255,255,0.35)',
+                outline: '2px dashed rgba(55, 65, 81, 0.55)',
                 outlineOffset: '-2px',
               }}
             />
@@ -657,8 +728,16 @@ export default function DailyGridView({
             e.preventDefault();
             const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
             const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
             const laneIndex = Math.max(0, Math.min(Math.floor(x / LANE_WIDTH), slotsPerType['accelerate-rx'] - 1));
-            setDragHover({ type: 'accelerate-rx', laneIndex });
+            const dragging = daySessions.find((s) => s.id === draggingSessionId);
+            if (!dragging) return;
+            const duration = minutesBetween(dragging.startTime, dragging.endTime);
+            const durationSlots = Math.max(1, Math.round(duration / incrementMinutes));
+            const totalSlots = Math.floor((businessEndMinutes - businessStartMinutes) / incrementMinutes);
+            let startSlotIndex = Math.max(0, Math.floor(y / rowHeight));
+            startSlotIndex = Math.min(startSlotIndex, totalSlots - durationSlots);
+            setDragHover({ type: 'accelerate-rx', laneIndex, startSlotIndex });
           }}
           onDragLeave={() => {
             if (draggingSessionType !== 'accelerate-rx') return;
@@ -669,15 +748,26 @@ export default function DailyGridView({
             e.preventDefault();
             const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
             const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
             const laneIndex = Math.max(0, Math.min(Math.floor(x / LANE_WIDTH), slotsPerType['accelerate-rx'] - 1));
             const session = daySessions.find((s) => s.id === draggingSessionId);
             if (session && session.sessionType === 'accelerate-rx') {
+              const duration = minutesBetween(session.startTime, session.endTime);
+              const durationSlots = Math.max(1, Math.round(duration / incrementMinutes));
+              const totalSlots = Math.floor((businessEndMinutes - businessStartMinutes) / incrementMinutes);
+              let startSlotIndex = Math.max(0, Math.floor(y / rowHeight));
+              startSlotIndex = Math.min(startSlotIndex, totalSlots - durationSlots);
+              const startMins = businessStartMinutes + startSlotIndex * incrementMinutes;
+              const newStartTime = minutesToHHMM(startMins);
+              const newEndTime = minutesToHHMM(startMins + duration);
               const newSeat = laneIndex + 1;
-              if (newSeat !== session.assignedSeat) {
+              if (onMove) {
+                onMove(session, newSeat, newStartTime, newEndTime);
+              } else if (onSeatChange && newSeat !== session.assignedSeat) {
                 onSeatChange(session, newSeat);
-                setSuccessFlashId(session.id);
-                window.setTimeout(() => setSuccessFlashId((id) => (id === session.id ? null : id)), 700);
               }
+              setSuccessFlashId(session.id);
+              window.setTimeout(() => setSuccessFlashId((id) => (id === session.id ? null : id)), 700);
             }
             setDragHover(null);
             setDraggingSessionId(null);
@@ -707,12 +797,20 @@ export default function DailyGridView({
           ))}
           {dragHover && draggingSessionType === 'accelerate-rx' && dragHover.type === 'accelerate-rx' && (
             <div
-              className="absolute top-0 bottom-0 pointer-events-none"
+              className="absolute pointer-events-none rounded-md"
               style={{
                 left: dragHover.laneIndex * LANE_WIDTH,
+                top: dragHover.startSlotIndex * rowHeight,
                 width: LANE_WIDTH,
-                backgroundColor: 'rgba(255,255,255,0.25)',
-                outline: '2px dashed rgba(55, 65, 81, 0.6)',
+                height:
+                  (() => {
+                    const s = daySessions.find((d) => d.id === draggingSessionId);
+                    if (!s) return rowHeight;
+                    const dMins = minutesBetween(s.startTime, s.endTime);
+                    return Math.max(6, (dMins / incrementMinutes) * rowHeight - BLOCK_GAP);
+                  })(),
+                backgroundColor: 'rgba(255,255,255,0.35)',
+                outline: '2px dashed rgba(55, 65, 81, 0.55)',
                 outlineOffset: '-2px',
               }}
             />
@@ -733,8 +831,16 @@ export default function DailyGridView({
             e.preventDefault();
             const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
             const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
             const laneIndex = Math.max(0, Math.min(Math.floor(x / LANE_WIDTH), slotsPerType['remote'] - 1));
-            setDragHover({ type: 'remote', laneIndex });
+            const dragging = daySessions.find((s) => s.id === draggingSessionId);
+            if (!dragging) return;
+            const duration = minutesBetween(dragging.startTime, dragging.endTime);
+            const durationSlots = Math.max(1, Math.round(duration / incrementMinutes));
+            const totalSlots = Math.floor((businessEndMinutes - businessStartMinutes) / incrementMinutes);
+            let startSlotIndex = Math.max(0, Math.floor(y / rowHeight));
+            startSlotIndex = Math.min(startSlotIndex, totalSlots - durationSlots);
+            setDragHover({ type: 'remote', laneIndex, startSlotIndex });
           }}
           onDragLeave={() => {
             if (draggingSessionType !== 'remote') return;
@@ -745,15 +851,26 @@ export default function DailyGridView({
             e.preventDefault();
             const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
             const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
             const laneIndex = Math.max(0, Math.min(Math.floor(x / LANE_WIDTH), slotsPerType['remote'] - 1));
             const session = daySessions.find((s) => s.id === draggingSessionId);
             if (session && session.sessionType === 'remote') {
+              const duration = minutesBetween(session.startTime, session.endTime);
+              const durationSlots = Math.max(1, Math.round(duration / incrementMinutes));
+              const totalSlots = Math.floor((businessEndMinutes - businessStartMinutes) / incrementMinutes);
+              let startSlotIndex = Math.max(0, Math.floor(y / rowHeight));
+              startSlotIndex = Math.min(startSlotIndex, totalSlots - durationSlots);
+              const startMins = businessStartMinutes + startSlotIndex * incrementMinutes;
+              const newStartTime = minutesToHHMM(startMins);
+              const newEndTime = minutesToHHMM(startMins + duration);
               const newSeat = laneIndex + 1;
-              if (newSeat !== session.assignedSeat) {
+              if (onMove) {
+                onMove(session, newSeat, newStartTime, newEndTime);
+              } else if (onSeatChange && newSeat !== session.assignedSeat) {
                 onSeatChange(session, newSeat);
-                setSuccessFlashId(session.id);
-                window.setTimeout(() => setSuccessFlashId((id) => (id === session.id ? null : id)), 700);
               }
+              setSuccessFlashId(session.id);
+              window.setTimeout(() => setSuccessFlashId((id) => (id === session.id ? null : id)), 700);
             }
             setDragHover(null);
             setDraggingSessionId(null);
@@ -783,12 +900,20 @@ export default function DailyGridView({
           ))}
           {dragHover && draggingSessionType === 'remote' && dragHover.type === 'remote' && (
             <div
-              className="absolute top-0 bottom-0 pointer-events-none"
+              className="absolute pointer-events-none rounded-md"
               style={{
                 left: dragHover.laneIndex * LANE_WIDTH,
+                top: dragHover.startSlotIndex * rowHeight,
                 width: LANE_WIDTH,
-                backgroundColor: 'rgba(255,255,255,0.25)',
-                outline: '2px dashed rgba(55, 65, 81, 0.6)',
+                height:
+                  (() => {
+                    const s = daySessions.find((d) => d.id === draggingSessionId);
+                    if (!s) return rowHeight;
+                    const dMins = minutesBetween(s.startTime, s.endTime);
+                    return Math.max(6, (dMins / incrementMinutes) * rowHeight - BLOCK_GAP);
+                  })(),
+                backgroundColor: 'rgba(255,255,255,0.35)',
+                outline: '2px dashed rgba(55, 65, 81, 0.55)',
                 outlineOffset: '-2px',
               }}
             />
@@ -809,8 +934,16 @@ export default function DailyGridView({
             e.preventDefault();
             const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
             const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
             const laneIndex = Math.max(0, Math.min(Math.floor(x / LANE_WIDTH), slotsPerType['gt'] - 1));
-            setDragHover({ type: 'gt', laneIndex });
+            const dragging = daySessions.find((s) => s.id === draggingSessionId);
+            if (!dragging) return;
+            const duration = minutesBetween(dragging.startTime, dragging.endTime);
+            const durationSlots = Math.max(1, Math.round(duration / incrementMinutes));
+            const totalSlots = Math.floor((businessEndMinutes - businessStartMinutes) / incrementMinutes);
+            let startSlotIndex = Math.max(0, Math.floor(y / rowHeight));
+            startSlotIndex = Math.min(startSlotIndex, totalSlots - durationSlots);
+            setDragHover({ type: 'gt', laneIndex, startSlotIndex });
           }}
           onDragLeave={() => {
             if (draggingSessionType !== 'gt') return;
@@ -821,15 +954,26 @@ export default function DailyGridView({
             e.preventDefault();
             const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
             const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
             const laneIndex = Math.max(0, Math.min(Math.floor(x / LANE_WIDTH), slotsPerType['gt'] - 1));
             const session = daySessions.find((s) => s.id === draggingSessionId);
             if (session && session.sessionType === 'gt') {
+              const duration = minutesBetween(session.startTime, session.endTime);
+              const durationSlots = Math.max(1, Math.round(duration / incrementMinutes));
+              const totalSlots = Math.floor((businessEndMinutes - businessStartMinutes) / incrementMinutes);
+              let startSlotIndex = Math.max(0, Math.floor(y / rowHeight));
+              startSlotIndex = Math.min(startSlotIndex, totalSlots - durationSlots);
+              const startMins = businessStartMinutes + startSlotIndex * incrementMinutes;
+              const newStartTime = minutesToHHMM(startMins);
+              const newEndTime = minutesToHHMM(startMins + duration);
               const newSeat = laneIndex + 1;
-              if (newSeat !== session.assignedSeat) {
+              if (onMove) {
+                onMove(session, newSeat, newStartTime, newEndTime);
+              } else if (onSeatChange && newSeat !== session.assignedSeat) {
                 onSeatChange(session, newSeat);
-                setSuccessFlashId(session.id);
-                window.setTimeout(() => setSuccessFlashId((id) => (id === session.id ? null : id)), 700);
               }
+              setSuccessFlashId(session.id);
+              window.setTimeout(() => setSuccessFlashId((id) => (id === session.id ? null : id)), 700);
             }
             setDragHover(null);
             setDraggingSessionId(null);
@@ -859,12 +1003,20 @@ export default function DailyGridView({
           ))}
           {dragHover && draggingSessionType === 'gt' && dragHover.type === 'gt' && (
             <div
-              className="absolute top-0 bottom-0 pointer-events-none"
+              className="absolute pointer-events-none rounded-md"
               style={{
                 left: dragHover.laneIndex * LANE_WIDTH,
+                top: dragHover.startSlotIndex * rowHeight,
                 width: LANE_WIDTH,
-                backgroundColor: 'rgba(255,255,255,0.25)',
-                outline: '2px dashed rgba(55, 65, 81, 0.6)',
+                height:
+                  (() => {
+                    const s = daySessions.find((d) => d.id === draggingSessionId);
+                    if (!s) return rowHeight;
+                    const dMins = minutesBetween(s.startTime, s.endTime);
+                    return Math.max(6, (dMins / incrementMinutes) * rowHeight - BLOCK_GAP);
+                  })(),
+                backgroundColor: 'rgba(255,255,255,0.35)',
+                outline: '2px dashed rgba(55, 65, 81, 0.55)',
                 outlineOffset: '-2px',
               }}
             />
