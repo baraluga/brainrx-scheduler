@@ -73,6 +73,16 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
     return options
   }
 
+  const setQuickTimeSlot = (durationMinutes: number) => {
+    if (!formData.startTime) return
+    const [sh, sm] = formData.startTime.split(':').map(Number)
+    const startMins = sh * 60 + sm
+    const endMins = Math.min(startMins + durationMinutes, BUSINESS_END_MINUTES)
+    const endTime = minutesToHHMM(endMins)
+    setFormData(prev => ({ ...prev, endTime, assignedSeat: '' }))
+    setErrors(prev => ({ ...prev, endTime: undefined, timeSlot: undefined }))
+  }
+
   const SEAT_CONFIG = {
     slotsPerType: {
       "training-tabletop": 10,
@@ -94,12 +104,38 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
     notes: initial?.notes || ''
   })
 
+  const [studentSearch, setStudentSearch] = useState('')
+  const [trainerSearch, setTrainerSearch] = useState('')
+  const [showStudentDropdown, setShowStudentDropdown] = useState(false)
+  const [showTrainerDropdown, setShowTrainerDropdown] = useState(false)
+
   const [errors, setErrors] = useState<SessionFormErrors>({})
 
   // Get available trainers based on session type
   const availableTrainers = formData.sessionType === 'gt'
     ? trainers.filter(trainer => trainer.canDoGtAssessments)
     : trainers
+
+  // Filter students and trainers based on search
+  const filteredStudents = students.filter(student => {
+    const name = (student.firstName || student.name || '').toLowerCase()
+    return name.includes(studentSearch.toLowerCase())
+  })
+
+  const filteredTrainers = availableTrainers.filter(trainer => {
+    const name = (trainer.firstName || trainer.name || '').toLowerCase()
+    return name.includes(trainerSearch.toLowerCase())
+  })
+
+  const getStudentDisplayName = (studentId: string) => {
+    const student = students.find(s => s.id === studentId)
+    return student?.firstName || student?.name || 'Select a student'
+  }
+
+  const getTrainerDisplayName = (trainerId: string) => {
+    const trainer = trainers.find(t => t.id === trainerId)
+    return trainer?.firstName || trainer?.name || 'Select a trainer'
+  }
 
   // Get available seats based on session type and time slot
   const availableSeats = useMemo(() => {
@@ -200,6 +236,7 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
     // Clear trainer selection if session type changes
     if (field === 'sessionType') {
       setFormData(prev => ({ ...prev, trainerId: '', assignedSeat: '' }))
+      setTrainerSearch('')
     }
 
     // If start time changes, ensure end time remains valid; otherwise clear it
@@ -269,72 +306,79 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Student */}
+      <div className="relative">
+        <label htmlFor="studentId" className="block text-sm font-medium text-gray-700 mb-2">
+          Student *
+        </label>
+        <div className="relative">
+          <input
+            type="text"
+            value={formData.studentId ? getStudentDisplayName(formData.studentId) : studentSearch}
+            onChange={(e) => {
+              setStudentSearch(e.target.value)
+              if (formData.studentId) {
+                setFormData(prev => ({ ...prev, studentId: '' }))
+              }
+            }}
+            onFocus={() => setShowStudentDropdown(true)}
+            onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+              errors.studentId ? 'border-red-500' : 'border-gray-300'
+            }`}
+            placeholder="Search for a student..."
+            aria-invalid={!!errors.studentId}
+          />
+          {showStudentDropdown && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+              {filteredStudents.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-gray-500">No students found</div>
+              ) : (
+                filteredStudents.map((student) => (
+                  <button
+                    key={student.id}
+                    type="button"
+                    onClick={() => {
+                      setFormData(prev => ({ ...prev, studentId: student.id }))
+                      setStudentSearch('')
+                      setShowStudentDropdown(false)
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 focus:bg-gray-50"
+                  >
+                    {student.firstName || student.name}
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+        {errors.studentId && (
+          <p className="mt-1 text-sm text-red-600">{errors.studentId}</p>
+        )}
+      </div>
+
       {/* Session Type */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">
+        <label htmlFor="sessionType" className="block text-sm font-medium text-gray-700 mb-2">
           Session Type *
         </label>
-        <div className="space-y-2">
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="sessionType"
-              value="training-tabletop"
-              checked={formData.sessionType === 'training-tabletop'}
-              onChange={(e) => handleFieldChange('sessionType', e.target.value as SessionType)}
-              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
-            />
-            <span className="ml-2 text-sm text-gray-700">Training (Table-top)</span>
-          </label>
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="sessionType"
-              value="training-digital"
-              checked={formData.sessionType === 'training-digital'}
-              onChange={(e) => handleFieldChange('sessionType', e.target.value as SessionType)}
-              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
-            />
-            <span className="ml-2 text-sm text-gray-700">Training (Digital)</span>
-          </label>
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="sessionType"
-              value="accelerate-rx"
-              checked={formData.sessionType === 'accelerate-rx'}
-              onChange={(e) => handleFieldChange('sessionType', e.target.value as SessionType)}
-              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
-            />
-            <span className="ml-2 text-sm text-gray-700">AccelerateRx</span>
-          </label>
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="sessionType"
-              value="remote"
-              checked={formData.sessionType === 'remote'}
-              onChange={(e) => handleFieldChange('sessionType', e.target.value as SessionType)}
-              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
-            />
-            <span className="ml-2 text-sm text-gray-700">Remote</span>
-          </label>
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="sessionType"
-              value="gt"
-              checked={formData.sessionType === 'gt'}
-              onChange={(e) => handleFieldChange('sessionType', e.target.value as SessionType)}
-              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
-            />
-            <span className="ml-2 text-sm text-gray-700">GT</span>
-          </label>
-        </div>
+        <select
+          id="sessionType"
+          value={formData.sessionType}
+          onChange={(e) => handleFieldChange('sessionType', e.target.value as SessionType)}
+          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+            errors.sessionType ? 'border-red-500' : 'border-gray-300'
+          }`}
+          aria-invalid={!!errors.sessionType}
+        >
+          <option value="training-tabletop">Training (Table-top)</option>
+          <option value="training-digital">Training (Digital)</option>
+          <option value="accelerate-rx">AccelerateRx</option>
+          <option value="remote">Remote</option>
+          <option value="gt">GT</option>
+        </select>
         {errors.sessionType && (
-          <p className="mt-1 text-sm text-red-600">
-            {errors.sessionType}
-          </p>
+          <p className="mt-1 text-sm text-red-600">{errors.sessionType}</p>
         )}
       </div>
 
@@ -383,56 +427,96 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
         )}
       </div>
 
-      {/* Time Slot */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-2">
-            Start Time *
-          </label>
-          <select
-            id="startTime"
-            value={formData.startTime}
-            onChange={(e) => handleFieldChange('startTime', e.target.value)}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-              errors.startTime ? 'border-red-500' : 'border-gray-300'
-            }`}
-            aria-invalid={!!errors.startTime}
-            aria-describedby={errors.startTime ? 'startTime-error' : undefined}
-          >
-            <option value="">Select start time</option>
-            {generateStartTimeOptions().map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-          {errors.startTime && (
-            <p id="startTime-error" className="mt-1 text-sm text-red-600">{errors.startTime}</p>
-          )}
-        </div>
+      {/* Time Slot with Quick Presets */}
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-2">
+              Start Time *
+            </label>
+            <select
+              id="startTime"
+              value={formData.startTime}
+              onChange={(e) => handleFieldChange('startTime', e.target.value)}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                errors.startTime ? 'border-red-500' : 'border-gray-300'
+              }`}
+              aria-invalid={!!errors.startTime}
+              aria-describedby={errors.startTime ? 'startTime-error' : undefined}
+            >
+              <option value="">Select start time</option>
+              {generateStartTimeOptions().map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+            {errors.startTime && (
+              <p id="startTime-error" className="mt-1 text-sm text-red-600">{errors.startTime}</p>
+            )}
+          </div>
 
-        <div>
-          <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-2">
-            End Time *
-          </label>
-          <select
-            id="endTime"
-            value={formData.endTime}
-            onChange={(e) => handleFieldChange('endTime', e.target.value)}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-              errors.endTime ? 'border-red-500' : 'border-gray-300'
-            }`}
-            aria-invalid={!!errors.endTime}
-            aria-describedby={errors.endTime ? 'endTime-error' : undefined}
-            disabled={!formData.startTime}
-          >
-            <option value="">{formData.startTime ? 'Select end time' : 'Select start time first'}</option>
-            {generateEndTimeOptions(formData.startTime).map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-          {errors.endTime && (
-            <p id="endTime-error" className="mt-1 text-sm text-red-600">{errors.endTime}</p>
-          )}
+          <div>
+            <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-2">
+              End Time *
+            </label>
+            <select
+              id="endTime"
+              value={formData.endTime}
+              onChange={(e) => handleFieldChange('endTime', e.target.value)}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                errors.endTime ? 'border-red-500' : 'border-gray-300'
+              }`}
+              aria-invalid={!!errors.endTime}
+              aria-describedby={errors.endTime ? 'endTime-error' : undefined}
+              disabled={!formData.startTime}
+            >
+              <option value="">{formData.startTime ? 'Select end time' : 'Select start time first'}</option>
+              {generateEndTimeOptions(formData.startTime).map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+            {errors.endTime && (
+              <p id="endTime-error" className="mt-1 text-sm text-red-600">{errors.endTime}</p>
+            )}
+          </div>
         </div>
+        
+        {formData.startTime && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Quick Duration
+            </label>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setQuickTimeSlot(30)}
+                className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              >
+                30 min
+              </button>
+              <button
+                type="button"
+                onClick={() => setQuickTimeSlot(45)}
+                className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              >
+                45 min
+              </button>
+              <button
+                type="button"
+                onClick={() => setQuickTimeSlot(60)}
+                className="px-3 py-1 text-xs bg-primary-100 border border-primary-300 text-primary-700 rounded hover:bg-primary-200 transition-colors font-medium"
+              >
+                1 hour
+              </button>
+              <button
+                type="button"
+                onClick={() => setQuickTimeSlot(90)}
+                className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              >
+                90 min
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Time slot validation error */}
@@ -441,6 +525,65 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
           {errors.timeSlot}
         </p>
       )}
+
+      {/* Trainer */}
+      <div className="relative">
+        <label htmlFor="trainerId" className="block text-sm font-medium text-gray-700 mb-2">
+          Trainer *
+        </label>
+        {availableTrainers.length === 0 && formData.sessionType === 'gt' && (
+          <div className="mb-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+            <p className="text-sm text-yellow-800">
+              No trainers are certified for GT Assessment. Please ensure at least one trainer has "GT Assessment" certification.
+            </p>
+          </div>
+        )}
+        <div className="relative">
+          <input
+            type="text"
+            value={formData.trainerId ? getTrainerDisplayName(formData.trainerId) : trainerSearch}
+            onChange={(e) => {
+              setTrainerSearch(e.target.value)
+              if (formData.trainerId) {
+                setFormData(prev => ({ ...prev, trainerId: '' }))
+              }
+            }}
+            onFocus={() => setShowTrainerDropdown(true)}
+            onBlur={() => setTimeout(() => setShowTrainerDropdown(false), 200)}
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+              errors.trainerId ? 'border-red-500' : 'border-gray-300'
+            }`}
+            placeholder="Search for a trainer..."
+            aria-invalid={!!errors.trainerId}
+            disabled={availableTrainers.length === 0}
+          />
+          {showTrainerDropdown && availableTrainers.length > 0 && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+              {filteredTrainers.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-gray-500">No trainers found</div>
+              ) : (
+                filteredTrainers.map((trainer) => (
+                  <button
+                    key={trainer.id}
+                    type="button"
+                    onClick={() => {
+                      setFormData(prev => ({ ...prev, trainerId: trainer.id }))
+                      setTrainerSearch('')
+                      setShowTrainerDropdown(false)
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 focus:bg-gray-50"
+                  >
+                    {trainer.firstName || trainer.name}
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+        {errors.trainerId && (
+          <p className="mt-1 text-sm text-red-600">{errors.trainerId}</p>
+        )}
+      </div>
 
       {/* Seat */}
       <div>
@@ -478,74 +621,6 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
         {availableSeats.length === 0 && formData.sessionType && formData.date && formData.startTime && formData.endTime && (
           <p className="mt-1 text-sm text-yellow-600">
             All seats for {formData.sessionType.replace('-', ' ')} are occupied during this time slot.
-          </p>
-        )}
-      </div>
-
-      {/* Student */}
-      <div>
-        <label htmlFor="studentId" className="block text-sm font-medium text-gray-700 mb-2">
-          Student *
-        </label>
-        <select
-          id="studentId"
-          value={formData.studentId}
-          onChange={(e) => handleFieldChange('studentId', e.target.value)}
-          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-            errors.studentId ? 'border-red-500' : 'border-gray-300'
-          }`}
-          aria-invalid={!!errors.studentId}
-          aria-describedby={errors.studentId ? 'studentId-error' : undefined}
-        >
-          <option value="">Select a student</option>
-          {students.map((student) => (
-            <option key={student.id} value={student.id}>
-              {student.firstName || student.name}
-            </option>
-          ))}
-        </select>
-        {errors.studentId && (
-          <p id="studentId-error" className="mt-1 text-sm text-red-600">
-            {errors.studentId}
-          </p>
-        )}
-      </div>
-
-      {/* Program removed */}
-
-      {/* Trainer */}
-      <div>
-        <label htmlFor="trainerId" className="block text-sm font-medium text-gray-700 mb-2">
-          Trainer *
-        </label>
-        {availableTrainers.length === 0 && formData.sessionType === 'gt' && (
-          <div className="mb-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-            <p className="text-sm text-yellow-800">
-              No trainers are certified for GT Assessment. Please ensure at least one trainer has "GT Assessment" certification.
-            </p>
-          </div>
-        )}
-        <select
-          id="trainerId"
-          value={formData.trainerId}
-          onChange={(e) => handleFieldChange('trainerId', e.target.value)}
-          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-            errors.trainerId ? 'border-red-500' : 'border-gray-300'
-          }`}
-          aria-invalid={!!errors.trainerId}
-          aria-describedby={errors.trainerId ? 'trainerId-error' : undefined}
-          disabled={availableTrainers.length === 0}
-        >
-          <option value="">Select a trainer</option>
-          {availableTrainers.map((trainer) => (
-            <option key={trainer.id} value={trainer.id}>
-              {trainer.firstName || trainer.name}
-            </option>
-          ))}
-        </select>
-        {errors.trainerId && (
-          <p id="trainerId-error" className="mt-1 text-sm text-red-600">
-            {errors.trainerId}
           </p>
         )}
       </div>
