@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Session, Student, Trainer, SessionType } from "../types/index";
-import { listSessions, createSession } from "../services/sessions";
+import { listSessions, createSession, updateSession } from "../services/sessions";
 import { listStudents } from "../services/students";
 import { listTrainers } from "../services/trainers";
 import SessionForm from "../components/sessions/SessionForm";
@@ -455,6 +455,15 @@ function Calendar() {
             trainers={trainers}
             config={{ ...GRID_CONFIG, nowOffsetMinutes: 600 }}
             onSelect={(session) => setEditing(session)}
+            onSeatChange={(session, newSeat) => {
+              try {
+                updateSession(session.id, { assignedSeat: newSeat });
+                refreshSessions();
+                // No snackbar; subtle success handled in grid itself
+              } catch (e) {
+                showToast('Failed to change seat', 'error');
+              }
+            }}
           />
         </div>
       )}

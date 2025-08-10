@@ -17,6 +17,7 @@ type DailyGridViewProps = {
   trainers: Trainer[];
   config: DailyGridConfig;
   onSelect?: (session: Session) => void;
+  onSeatChange?: (session: Session, newSeat: number) => void;
 };
 
 type PositionedSession = Session & {
@@ -87,6 +88,7 @@ export default function DailyGridView({
   trainers,
   config,
   onSelect,
+  onSeatChange,
 }: DailyGridViewProps) {
   const {
     businessStartMinutes,
@@ -233,6 +235,10 @@ export default function DailyGridView({
 
   const [editOverlayVisibleId, setEditOverlayVisibleId] = useState<string | null>(null);
   const hoverTimerRef = useRef<number | null>(null);
+  const [draggingSessionId, setDraggingSessionId] = useState<string | null>(null);
+  const [draggingSessionType, setDraggingSessionType] = useState<SessionType | null>(null);
+  const [dragHover, setDragHover] = useState<{ type: SessionType; laneIndex: number } | null>(null);
+  const [successFlashId, setSuccessFlashId] = useState<string | null>(null);
 
   const handleMouseEnter = (sessionId: string) => {
     if (hoverTimerRef.current) {
@@ -269,10 +275,13 @@ export default function DailyGridView({
     const trainerNick = trainer?.firstName || getName(p.trainerId, trainers);
     //
 
+    const isDragging = draggingSessionId === p.id;
+    const isFlashingSuccess = successFlashId === p.id;
+
     return (
       <div
         key={p.id}
-        className="group absolute px-2 py-1 rounded-md overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-default"
+        className={`group absolute px-2 py-1 rounded-md overflow-hidden shadow-sm hover:shadow-md transition ${onSeatChange ? 'cursor-grab active:cursor-grabbing hover:-translate-y-0.5' : 'cursor-default'} ${isDragging ? 'ring-2 ring-primary-500 opacity-85' : ''} ${isFlashingSuccess ? 'ring-2 ring-emerald-500' : ''}`}
         style={{
           top: startOffset + BLOCK_GAP / 2,
           height,
@@ -284,6 +293,21 @@ export default function DailyGridView({
         title={`${studentName} — ${trainerNick}\n${p.startTime}–${p.endTime} (${p.status})`}
         onMouseEnter={() => handleMouseEnter(p.id)}
         onMouseLeave={() => handleMouseLeave(p.id)}
+        draggable={!!onSeatChange}
+        onDragStart={(e) => {
+          if (!onSeatChange) return;
+          setDraggingSessionId(p.id);
+          setDraggingSessionType(p.sessionType);
+          try {
+            e.dataTransfer?.setData('text/plain', p.id);
+            e.dataTransfer?.setDragImage(e.currentTarget, 10, 10);
+          } catch {}
+        }}
+        onDragEnd={() => {
+          setDraggingSessionId(null);
+          setDraggingSessionType(null);
+          setDragHover(null);
+        }}
       >
         {onSelect && editOverlayVisibleId === p.id && (
           <button
@@ -472,6 +496,37 @@ export default function DailyGridView({
         <div
           className="relative border-l border-gray-200"
           style={{ height: gridHeight, width: ttColWidth, backgroundColor: COLUMN_BG['training-tabletop'] }}
+          onDragOver={(e) => {
+            if (draggingSessionType !== 'training-tabletop') return;
+            e.preventDefault();
+            const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const laneIndex = Math.max(0, Math.min(Math.floor(x / LANE_WIDTH), slotsPerType['training-tabletop'] - 1));
+            setDragHover({ type: 'training-tabletop', laneIndex });
+          }}
+          onDragLeave={() => {
+            if (draggingSessionType !== 'training-tabletop') return;
+            setDragHover((h) => (h && h.type === 'training-tabletop' ? null : h));
+          }}
+          onDrop={(e) => {
+            if (!onSeatChange || draggingSessionType !== 'training-tabletop' || !draggingSessionId) return;
+            e.preventDefault();
+            const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const laneIndex = Math.max(0, Math.min(Math.floor(x / LANE_WIDTH), slotsPerType['training-tabletop'] - 1));
+            const session = daySessions.find((s) => s.id === draggingSessionId);
+            if (session && session.sessionType === 'training-tabletop') {
+              const newSeat = laneIndex + 1;
+              if (newSeat !== session.assignedSeat) {
+                onSeatChange(session, newSeat);
+                setSuccessFlashId(session.id);
+                window.setTimeout(() => setSuccessFlashId((id) => (id === session.id ? null : id)), 700);
+              }
+            }
+            setDragHover(null);
+            setDraggingSessionId(null);
+            setDraggingSessionType(null);
+          }}
         >
           {/* Background grid lines */}
           {currentSlotTop !== null && (
@@ -495,6 +550,19 @@ export default function DailyGridView({
               }}
             />
           ))}
+          {/* Hover lane indicator (drag) */}
+          {dragHover && draggingSessionType === 'training-tabletop' && dragHover.type === 'training-tabletop' && (
+            <div
+              className="absolute top-0 bottom-0 pointer-events-none"
+              style={{
+                left: dragHover.laneIndex * LANE_WIDTH,
+                width: LANE_WIDTH,
+                backgroundColor: 'rgba(255,255,255,0.25)',
+                outline: '2px dashed rgba(55, 65, 81, 0.6)',
+                outlineOffset: '-2px',
+              }}
+            />
+          )}
           {/* Sessions */}
           {tabletopPositioned.map(renderAppt)}
           {/* Now line */}
@@ -508,6 +576,37 @@ export default function DailyGridView({
         <div
           className="relative border-l border-gray-200"
           style={{ height: gridHeight, width: dgColWidth, backgroundColor: COLUMN_BG['training-digital'] }}
+          onDragOver={(e) => {
+            if (draggingSessionType !== 'training-digital') return;
+            e.preventDefault();
+            const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const laneIndex = Math.max(0, Math.min(Math.floor(x / LANE_WIDTH), slotsPerType['training-digital'] - 1));
+            setDragHover({ type: 'training-digital', laneIndex });
+          }}
+          onDragLeave={() => {
+            if (draggingSessionType !== 'training-digital') return;
+            setDragHover((h) => (h && h.type === 'training-digital' ? null : h));
+          }}
+          onDrop={(e) => {
+            if (!onSeatChange || draggingSessionType !== 'training-digital' || !draggingSessionId) return;
+            e.preventDefault();
+            const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const laneIndex = Math.max(0, Math.min(Math.floor(x / LANE_WIDTH), slotsPerType['training-digital'] - 1));
+            const session = daySessions.find((s) => s.id === draggingSessionId);
+            if (session && session.sessionType === 'training-digital') {
+              const newSeat = laneIndex + 1;
+              if (newSeat !== session.assignedSeat) {
+                onSeatChange(session, newSeat);
+                setSuccessFlashId(session.id);
+                window.setTimeout(() => setSuccessFlashId((id) => (id === session.id ? null : id)), 700);
+              }
+            }
+            setDragHover(null);
+            setDraggingSessionId(null);
+            setDraggingSessionType(null);
+          }}
         >
           {currentSlotTop !== null && (
             <div
@@ -530,6 +629,18 @@ export default function DailyGridView({
               }}
             />
           ))}
+          {dragHover && draggingSessionType === 'training-digital' && dragHover.type === 'training-digital' && (
+            <div
+              className="absolute top-0 bottom-0 pointer-events-none"
+              style={{
+                left: dragHover.laneIndex * LANE_WIDTH,
+                width: LANE_WIDTH,
+                backgroundColor: 'rgba(255,255,255,0.25)',
+                outline: '2px dashed rgba(55, 65, 81, 0.6)',
+                outlineOffset: '-2px',
+              }}
+            />
+          )}
           {digitalPositioned.map(renderAppt)}
           {nowLineTop !== null && (
             <div
@@ -541,6 +652,37 @@ export default function DailyGridView({
         <div
           className="relative border-l border-gray-200"
           style={{ height: gridHeight, width: arxColWidth, backgroundColor: COLUMN_BG['accelerate-rx'] }}
+          onDragOver={(e) => {
+            if (draggingSessionType !== 'accelerate-rx') return;
+            e.preventDefault();
+            const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const laneIndex = Math.max(0, Math.min(Math.floor(x / LANE_WIDTH), slotsPerType['accelerate-rx'] - 1));
+            setDragHover({ type: 'accelerate-rx', laneIndex });
+          }}
+          onDragLeave={() => {
+            if (draggingSessionType !== 'accelerate-rx') return;
+            setDragHover((h) => (h && h.type === 'accelerate-rx' ? null : h));
+          }}
+          onDrop={(e) => {
+            if (!onSeatChange || draggingSessionType !== 'accelerate-rx' || !draggingSessionId) return;
+            e.preventDefault();
+            const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const laneIndex = Math.max(0, Math.min(Math.floor(x / LANE_WIDTH), slotsPerType['accelerate-rx'] - 1));
+            const session = daySessions.find((s) => s.id === draggingSessionId);
+            if (session && session.sessionType === 'accelerate-rx') {
+              const newSeat = laneIndex + 1;
+              if (newSeat !== session.assignedSeat) {
+                onSeatChange(session, newSeat);
+                setSuccessFlashId(session.id);
+                window.setTimeout(() => setSuccessFlashId((id) => (id === session.id ? null : id)), 700);
+              }
+            }
+            setDragHover(null);
+            setDraggingSessionId(null);
+            setDraggingSessionType(null);
+          }}
         >
           {currentSlotTop !== null && (
             <div
@@ -563,6 +705,18 @@ export default function DailyGridView({
               }}
             />
           ))}
+          {dragHover && draggingSessionType === 'accelerate-rx' && dragHover.type === 'accelerate-rx' && (
+            <div
+              className="absolute top-0 bottom-0 pointer-events-none"
+              style={{
+                left: dragHover.laneIndex * LANE_WIDTH,
+                width: LANE_WIDTH,
+                backgroundColor: 'rgba(255,255,255,0.25)',
+                outline: '2px dashed rgba(55, 65, 81, 0.6)',
+                outlineOffset: '-2px',
+              }}
+            />
+          )}
           {arxPositioned.map(renderAppt)}
           {nowLineTop !== null && (
             <div
@@ -574,6 +728,37 @@ export default function DailyGridView({
         <div
           className="relative border-l border-gray-200"
           style={{ height: gridHeight, width: rmColWidth, backgroundColor: COLUMN_BG['remote'] }}
+          onDragOver={(e) => {
+            if (draggingSessionType !== 'remote') return;
+            e.preventDefault();
+            const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const laneIndex = Math.max(0, Math.min(Math.floor(x / LANE_WIDTH), slotsPerType['remote'] - 1));
+            setDragHover({ type: 'remote', laneIndex });
+          }}
+          onDragLeave={() => {
+            if (draggingSessionType !== 'remote') return;
+            setDragHover((h) => (h && h.type === 'remote' ? null : h));
+          }}
+          onDrop={(e) => {
+            if (!onSeatChange || draggingSessionType !== 'remote' || !draggingSessionId) return;
+            e.preventDefault();
+            const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const laneIndex = Math.max(0, Math.min(Math.floor(x / LANE_WIDTH), slotsPerType['remote'] - 1));
+            const session = daySessions.find((s) => s.id === draggingSessionId);
+            if (session && session.sessionType === 'remote') {
+              const newSeat = laneIndex + 1;
+              if (newSeat !== session.assignedSeat) {
+                onSeatChange(session, newSeat);
+                setSuccessFlashId(session.id);
+                window.setTimeout(() => setSuccessFlashId((id) => (id === session.id ? null : id)), 700);
+              }
+            }
+            setDragHover(null);
+            setDraggingSessionId(null);
+            setDraggingSessionType(null);
+          }}
         >
           {currentSlotTop !== null && (
             <div
@@ -596,6 +781,18 @@ export default function DailyGridView({
               }}
             />
           ))}
+          {dragHover && draggingSessionType === 'remote' && dragHover.type === 'remote' && (
+            <div
+              className="absolute top-0 bottom-0 pointer-events-none"
+              style={{
+                left: dragHover.laneIndex * LANE_WIDTH,
+                width: LANE_WIDTH,
+                backgroundColor: 'rgba(255,255,255,0.25)',
+                outline: '2px dashed rgba(55, 65, 81, 0.6)',
+                outlineOffset: '-2px',
+              }}
+            />
+          )}
           {remotePositioned.map(renderAppt)}
           {nowLineTop !== null && (
             <div
@@ -607,6 +804,37 @@ export default function DailyGridView({
         <div
           className="relative border-l border-gray-200"
           style={{ height: gridHeight, width: gtColWidth, backgroundColor: COLUMN_BG['gt'] }}
+          onDragOver={(e) => {
+            if (draggingSessionType !== 'gt') return;
+            e.preventDefault();
+            const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const laneIndex = Math.max(0, Math.min(Math.floor(x / LANE_WIDTH), slotsPerType['gt'] - 1));
+            setDragHover({ type: 'gt', laneIndex });
+          }}
+          onDragLeave={() => {
+            if (draggingSessionType !== 'gt') return;
+            setDragHover((h) => (h && h.type === 'gt' ? null : h));
+          }}
+          onDrop={(e) => {
+            if (!onSeatChange || draggingSessionType !== 'gt' || !draggingSessionId) return;
+            e.preventDefault();
+            const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const laneIndex = Math.max(0, Math.min(Math.floor(x / LANE_WIDTH), slotsPerType['gt'] - 1));
+            const session = daySessions.find((s) => s.id === draggingSessionId);
+            if (session && session.sessionType === 'gt') {
+              const newSeat = laneIndex + 1;
+              if (newSeat !== session.assignedSeat) {
+                onSeatChange(session, newSeat);
+                setSuccessFlashId(session.id);
+                window.setTimeout(() => setSuccessFlashId((id) => (id === session.id ? null : id)), 700);
+              }
+            }
+            setDragHover(null);
+            setDraggingSessionId(null);
+            setDraggingSessionType(null);
+          }}
         >
           {currentSlotTop !== null && (
             <div
@@ -629,6 +857,18 @@ export default function DailyGridView({
               }}
             />
           ))}
+          {dragHover && draggingSessionType === 'gt' && dragHover.type === 'gt' && (
+            <div
+              className="absolute top-0 bottom-0 pointer-events-none"
+              style={{
+                left: dragHover.laneIndex * LANE_WIDTH,
+                width: LANE_WIDTH,
+                backgroundColor: 'rgba(255,255,255,0.25)',
+                outline: '2px dashed rgba(55, 65, 81, 0.6)',
+                outlineOffset: '-2px',
+              }}
+            />
+          )}
           {gtPositioned.map(renderAppt)}
           {nowLineTop !== null && (
             <div
