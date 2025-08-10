@@ -250,10 +250,33 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
       setErrors(prev => ({ ...prev, studentId: undefined, clientName: undefined }))
     }
 
-    // If start time changes, ensure end time remains valid; otherwise clear it
+    // If start time changes, maintain the same duration if possible
     if (field === 'startTime') {
-      const allowedEnds = new Set(generateEndTimeOptions(value))
-      if (!allowedEnds.has(formData.endTime)) {
+      if (formData.startTime && formData.endTime) {
+        // Calculate current duration
+        const [oldSh, oldSm] = formData.startTime.split(':').map(Number)
+        const [oldEh, oldEm] = formData.endTime.split(':').map(Number)
+        const oldStartMins = oldSh * 60 + oldSm
+        const oldEndMins = oldEh * 60 + oldEm
+        const currentDuration = oldEndMins - oldStartMins
+        
+        // Calculate new end time with same duration
+        const [newSh, newSm] = value.split(':').map(Number)
+        const newStartMins = newSh * 60 + newSm
+        const newEndMins = newStartMins + currentDuration
+        
+        // Check if new end time exceeds business hours
+        if (newEndMins <= BUSINESS_END_MINUTES) {
+          const newEndTime = minutesToHHMM(newEndMins)
+          setFormData(prev => ({ ...prev, endTime: newEndTime, assignedSeat: '' }))
+        } else {
+          // Use the last available increment
+          const maxEndMins = BUSINESS_END_MINUTES
+          const newEndTime = minutesToHHMM(maxEndMins)
+          setFormData(prev => ({ ...prev, endTime: newEndTime, assignedSeat: '' }))
+        }
+      } else {
+        // If no end time was set, clear it
         setFormData(prev => ({ ...prev, endTime: '', assignedSeat: '' }))
       }
     }

@@ -23,6 +23,39 @@ const minutesToHHMM = (mins: number): string => {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 };
 
+const HHMMToMinutes = (time: string): number => {
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+};
+
+const calculateNewEndTime = (newStartTime: string, originalDuration: number): string => {
+  const startMins = HHMMToMinutes(newStartTime);
+  const newEndMins = startMins + originalDuration;
+  
+  // Check if the calculated end time goes past business hours
+  if (newEndMins > BUSINESS_END_MINUTES) {
+    // Cap at the last available increment within business hours
+    const lastAvailableEnd = Math.floor(BUSINESS_END_MINUTES / INCREMENT) * INCREMENT;
+    return minutesToHHMM(lastAvailableEnd);
+  }
+  
+  return minutesToHHMM(newEndMins);
+};
+
+const calculateNewStartTime = (newEndTime: string, originalDuration: number): string => {
+  const endMins = HHMMToMinutes(newEndTime);
+  const newStartMins = endMins - originalDuration;
+  
+  // Check if the calculated start time goes before business hours
+  if (newStartMins < BUSINESS_START_MINUTES) {
+    // Cap at the first available increment within business hours
+    const firstAvailableStart = Math.ceil(BUSINESS_START_MINUTES / INCREMENT) * INCREMENT;
+    return minutesToHHMM(firstAvailableStart);
+  }
+  
+  return minutesToHHMM(newStartMins);
+};
+
 const generateStartTimeOptions = (): string[] => {
   const latestStart = BUSINESS_END_MINUTES - 30;
   const options: string[] = [];
@@ -47,6 +80,20 @@ const generateEndTimeOptions = (startTime?: string): string[] => {
   return options;
 };
 
+const generateExtendedEndTimeOptions = (startTime: string, targetDuration: number): string[] => {
+  if (!startTime) return [];
+  const [sh, sm] = startTime.split(":").map(Number);
+  const startMins = sh * 60 + sm;
+  const minEnd = startMins + 30;
+  const maxEnd = Math.min(startMins + targetDuration, BUSINESS_END_MINUTES);
+  const options: string[] = [];
+  for (let t = minEnd; t <= maxEnd; t += INCREMENT) {
+    const duration = t - startMins;
+    const displayText = `${minutesToHHMM(t)} (${duration} minutes)`;
+    options.push(displayText);
+  }
+  return options;
+};
 
 
 export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
@@ -63,6 +110,7 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
   const [trainerSearch, setTrainerSearch] = useState("");
   const [showTrainerDropdown, setShowTrainerDropdown] = useState(false);
   const [seatWarning, setSeatWarning] = useState<string | null>(null);
+  const [originalDuration, setOriginalDuration] = useState<number | null>(null);
 
   const SEAT_CONFIG = {
     slotsPerType: {
@@ -180,16 +228,59 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
   }, [trainerId, date, startTime, endTime, assignedSeat, availableSeats]);
 
   const onChangeStart = (val: string) => {
+    const oldStartTime = startTime;
+    const oldEndTime = endTime;
+    
     setStartTime(val);
-    const allowed = new Set(generateEndTimeOptions(val));
-    if (!allowed.has(endTime)) {
+    
+    // If we have both start and end times, preserve the duration
+    if (oldStartTime && oldEndTime) {
+      const duration = HHMMToMinutes(oldEndTime) - HHMMToMinutes(oldStartTime);
+      setOriginalDuration(duration);
+      const newEndTime = calculateNewEndTime(val, duration);
+      
+      // Check if the new end time is valid with extended options
+      const allowedEndTimes = generateExtendedEndTimeOptions(val, duration);
+      const isValidNewEndTime = allowedEndTimes.some(option => 
+        option.startsWith(newEndTime)
+      );
+      
+      if (isValidNewEndTime) {
+        setEndTime(newEndTime);
+      } else {
+        // If the calculated end time isn't valid, reset it
+        setEndTime("");
+        setAssignedSeat(0);
+      }
+    } else {
+      // If no end time was set, reset it
       setEndTime("");
-      setAssignedSeat(0); // Reset seat when time changes
+      setAssignedSeat(0);
+      setOriginalDuration(null);
     }
   };
 
   const onChangeEnd = (val: string) => {
+    const oldStartTime = startTime;
+    const oldEndTime = endTime;
+    
     setEndTime(val);
+    
+    // If we have both start and end times, preserve the duration
+    if (oldStartTime && oldEndTime) {
+      const duration = HHMMToMinutes(oldEndTime) - HHMMToMinutes(oldStartTime);
+      setOriginalDuration(duration);
+      const newStartTime = calculateNewStartTime(val, duration);
+      
+      // Check if the new start time is valid
+      const allowedStartTimes = generateStartTimeOptions();
+      const isValidNewStartTime = allowedStartTimes.includes(newStartTime);
+      
+      if (isValidNewStartTime) {
+        setStartTime(newStartTime);
+      }
+    }
+    
     setAssignedSeat(0); // Reset seat when time changes
   };
 
@@ -198,6 +289,7 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
   const onChangeDate = (val: string) => {
     setDate(val);
     setAssignedSeat(0); // Reset seat when date changes
+    setOriginalDuration(null); // Reset duration when date changes
   };
 
   // Auto-select seat when it becomes invalid or when starting with no seat
@@ -212,6 +304,14 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
       }
     }
   }, [availableSeats, assignedSeat, initial.assignedSeat]);
+
+  // Initialize original duration from initial session
+  useEffect(() => {
+    if (initial.startTime && initial.endTime) {
+      const duration = HHMMToMinutes(initial.endTime) - HHMMToMinutes(initial.startTime);
+      setOriginalDuration(duration);
+    }
+  }, [initial.startTime, initial.endTime]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -460,7 +560,7 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
               <option value="">
                 {startTime ? "Select end time" : "Select start time first"}
               </option>
-              {generateEndTimeOptions(startTime).map((t) => (
+              {(originalDuration ? generateExtendedEndTimeOptions(startTime, originalDuration) : generateEndTimeOptions(startTime)).map((t) => (
                 <option key={t} value={t.split(' (')[0]}>
                   {t}
                 </option>
