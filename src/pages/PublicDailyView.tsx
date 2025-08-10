@@ -33,7 +33,6 @@ export default function PublicDailyView() {
     businessEndMinutes: 19 * 60,
     incrementMinutes: 15,
     laneWidthPx: 64,
-    nowOffsetMinutes: 10 * 60,
     slotsPerType: {
       "training-tabletop": 10,
       "training-digital": 10,

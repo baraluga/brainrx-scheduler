@@ -347,7 +347,7 @@ export default function DailyGridView({
     return (
       <div
         key={p.id}
-        className={`group absolute px-2 py-1 rounded-md overflow-hidden shadow-sm hover:shadow-md transition ${onSeatChange && !readOnly ? 'cursor-grab active:cursor-grabbing hover:-translate-y-0.5' : 'cursor-default'} ${isDragging ? 'ring-2 ring-primary-500 opacity-85' : ''} ${isFlashingSuccess ? 'ring-2 ring-emerald-500' : ''}`}
+        className={`group absolute px-2 py-1 rounded-md overflow-hidden shadow-sm hover:shadow-md transition ${onSeatChange && !readOnly ? 'cursor-grab active:cursor-grabbing hover:-translate-y-0.5' : 'cursor-default'} ${readOnly ? 'session-readonly' : ''} ${isDragging ? 'ring-2 ring-primary-500 opacity-85' : ''} ${isFlashingSuccess ? 'ring-2 ring-emerald-500 animate-pulse' : ''}`}
         style={{
           top: startOffset + BLOCK_GAP / 2,
           height,
@@ -375,7 +375,7 @@ export default function DailyGridView({
           setDragHover(null);
         }}
       >
-        {onSelect && editOverlayVisibleId === p.id && (
+        {onSelect && editOverlayVisibleId === p.id && !readOnly && (
           <button
             type="button"
             aria-label="Edit session"
@@ -390,8 +390,17 @@ export default function DailyGridView({
         )}
         <div className="text-[12px] font-bold text-ink-900 truncate leading-tight">
           {studentName}
+          {readOnly && (
+            <span className="ml-1 inline-flex items-center text-[10px] text-gray-600 align-middle">
+              <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                <path fillRule="evenodd" d="M10 2a4 4 0 00-4 4v2H5a1 1 0 00-1 1v7a1 1 0 001 1h10a1 1 0 001-1v-7a1 1 0 00-1-1h-1V6a4 4 0 00-4-4zm2 6V6a2 2 0 10-4 0v2h4z" clipRule="evenodd" />
+              </svg>
+            </span>
+          )}
         </div>
         <div className="text-[10px] text-ink-700 leading-tight">{trainerNick}</div>
+
+        {/* success pulse handled on container */}
       </div>
     );
   };
