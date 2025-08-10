@@ -1215,8 +1215,11 @@ export default function DailyGridView({
       </div>
       {dragHover && draggingSessionId && (
         <div
-          className={`fixed z-50 pointer-events-none text-[11px] font-bold px-2 py-1 rounded shadow ${dragHover.conflict ? 'bg-red-600 text-white ring-2 ring-red-300' : 'bg-ink-900 text-white'}`}
-          style={{ left: dragHover.cursorX + 12, top: dragHover.cursorY + 12 }}
+          className={`fixed z-[9999] pointer-events-none text-[11px] font-bold px-2 py-1 rounded shadow ${dragHover.conflict ? 'bg-red-600 text-white ring-2 ring-red-300' : 'bg-ink-900 text-white ring-1 ring-black/10'}`}
+          style={{
+            left: Math.min((typeof window !== 'undefined' ? window.innerWidth : 9999) - 180, dragHover.cursorX + 24),
+            top: Math.max(8, dragHover.cursorY - 28),
+          }}
         >
           {dragHover.conflict ? '⚠ ' : ''}
           {`Seat ${dragHover.seatNumber} • ${minsToLabel(dragHover.startMins)} – ${minsToLabel(dragHover.endMins)}`}
