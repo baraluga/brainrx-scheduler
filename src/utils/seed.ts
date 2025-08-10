@@ -1,7 +1,7 @@
-import { Student, Trainer, Appointment } from '../types/index'
+import { Student, Trainer, Session } from '../types/index'
 import { listStudents, createStudent } from '../services/students'
 import { listTrainers, createTrainer } from '../services/trainers'
-import { listAppointments, createAppointment } from '../services/appointments'
+import { listSessions, createSession } from '../services/sessions'
 
 // Programs removed
 
@@ -96,9 +96,9 @@ const seedStudents = (): string[] => {
   return students.map(student => createStudent(student).id)
 }
 
-const seedAppointments = (studentIds: string[], trainerIds: string[]): void => {
+const seedSessions = (studentIds: string[], trainerIds: string[]): void => {
   const today = new Date()
-  const appointments: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'>[] = [
+  const sessions: Omit<Session, 'id' | 'createdAt' | 'updatedAt'>[] = [
     {
       sessionType: 'training-tabletop' as any,
       studentId: studentIds[0],
@@ -156,14 +156,14 @@ const seedAppointments = (studentIds: string[], trainerIds: string[]): void => {
     }
   ]
 
-  appointments.forEach(appointment => createAppointment(appointment))
+  sessions.forEach(session => createSession(session))
 }
 
 // Seed a realistic set of sessions for August 9, 2025 based on real usage patterns
 const seedAug9_2025IfLight = (): void => {
   const target = new Date(2025, 7, 9) // Aug is month index 7
   const targetKey = target.toDateString()
-  const existing = listAppointments().filter(a => new Date(a.date).toDateString() === targetKey)
+  const existing = listSessions().filter(a => new Date(a.date).toDateString() === targetKey)
   // Count existing per session type so we only top-up to small caps
   const countByType: Record<'training-tabletop'|'training-digital'|'accelerate-rx'|'remote'|'gt', number> = {
     'training-tabletop': existing.filter((a: any) => (a.sessionType ?? (a.appointmentType === 'training' ? 'training-tabletop' : '')) === 'training-tabletop').length,
@@ -193,7 +193,7 @@ const seedAug9_2025IfLight = (): void => {
   const randomFrom = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]
   // const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n))
 
-  const createBlock = (startMins: number, durationMins: number, type: any): Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'> => {
+  const createBlock = (startMins: number, durationMins: number, type: any): Omit<Session, 'id' | 'createdAt' | 'updatedAt'> => {
     const s = minutesToHHMM(startMins)
     const e = minutesToHHMM(startMins + durationMins)
     const student = randomFrom(students)
@@ -211,7 +211,7 @@ const seedAug9_2025IfLight = (): void => {
       notes: ''
     }
   }
-  const appts: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'>[] = []
+  const appts: Omit<Session, 'id' | 'createdAt' | 'updatedAt'>[] = []
 
   // Generic generator that respects lane capacity, avoids overlaps, and follows density by time window
   type GenConfig = {
@@ -331,7 +331,7 @@ const seedAug9_2025IfLight = (): void => {
   }
 
   // Persist
-  appts.forEach(a => createAppointment(a))
+  appts.forEach(a => createSession(a))
   console.log(`[seed] Added ${appts.length} sessions for Aug 9, 2025 (existing by type: ${JSON.stringify(countByType)})`)
 }
 
@@ -339,19 +339,19 @@ export function seedIfEmpty(): void {
   // Check if data already exists
   const existingStudents = listStudents()
   const existingTrainers = listTrainers()
-  const existingAppointments = listAppointments()
+  const existingSessions = listSessions()
 
   // Only seed if all collections are empty
   if (existingStudents.length === 0 && 
       existingTrainers.length === 0 && 
-      existingAppointments.length === 0) {
+      existingSessions.length === 0) {
     
     console.log('Seeding initial data...')
     
     // Seed in dependency order
     const trainerIds = seedTrainers()
     const studentIds = seedStudents()
-    seedAppointments(studentIds, trainerIds)
+    seedSessions(studentIds, trainerIds)
     
     console.log('Seed data created successfully')
   }

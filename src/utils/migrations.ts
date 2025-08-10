@@ -39,13 +39,13 @@ function migrateRemovePrograms(): void {
     })
     saveCollection(STORAGE_KEYS.students, sanitizedStudents)
 
-    // Remove programId from appointments
-    const appointments = loadCollection<any>(STORAGE_KEYS.appointments)
-    const sanitizedAppointments = appointments.map((a) => {
+    // Remove programId from sessions
+    const sessions = loadCollection<any>(STORAGE_KEYS.appointments)
+    const sanitizedSessions = sessions.map((a) => {
       const { programId, ...rest } = a || {}
       return rest
     })
-    saveCollection(STORAGE_KEYS.appointments, sanitizedAppointments)
+    saveCollection(STORAGE_KEYS.appointments, sanitizedSessions)
   } catch (error) {
     console.error('Migration (remove programs) failed:', error)
   }

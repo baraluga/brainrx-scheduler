@@ -1,10 +1,10 @@
 import { useState, useEffect, FormEvent } from 'react'
-import { Appointment, SessionType, Student, Trainer } from '../../types/index'
+import { Session, SessionType, Student, Trainer } from '../../types/index'
 import { listStudents } from '../../services/students'
 import { listTrainers } from '../../services/trainers'
 import { validateTimeSlot } from '../../utils/validation'
 
-interface AppointmentFormData {
+interface SessionFormData {
   sessionType: SessionType
   date: string
   startTime: string
@@ -14,7 +14,7 @@ interface AppointmentFormData {
   notes: string
 }
 
-interface AppointmentFormErrors {
+interface SessionFormErrors {
   sessionType?: string
   date?: string
   startTime?: string
@@ -24,14 +24,14 @@ interface AppointmentFormErrors {
   trainerId?: string
 }
 
-interface AppointmentFormProps {
-  initial?: Partial<Appointment>
-  onSubmit: (data: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => void
+interface SessionFormProps {
+  initial?: Partial<Session>
+  onSubmit: (data: Omit<Session, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => void
   onCancel: () => void
   submitLabel?: string
 }
 
-export default function AppointmentForm({ initial, onSubmit, onCancel, submitLabel = 'Add Session' }: AppointmentFormProps) {
+export default function SessionForm({ initial, onSubmit, onCancel, submitLabel = 'Add Session' }: SessionFormProps) {
   const [students] = useState<Student[]>(listStudents())
   const [trainers] = useState<Trainer[]>(listTrainers())
   
@@ -68,7 +68,7 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
     return options
   }
 
-  const [formData, setFormData] = useState<AppointmentFormData>({
+  const [formData, setFormData] = useState<SessionFormData>({
     sessionType: (initial as any)?.sessionType || 'training-tabletop',
     date: initial?.date ? initial.date.split('T')[0] : '',
     startTime: initial?.startTime || '',
@@ -78,7 +78,7 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
     notes: initial?.notes || ''
   })
 
-  const [errors, setErrors] = useState<AppointmentFormErrors>({})
+  const [errors, setErrors] = useState<SessionFormErrors>({})
 
   // Get available trainers based on session type
   const availableTrainers = formData.sessionType === 'gt'
@@ -131,7 +131,7 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
   }
 
   const validateForm = () => {
-    const newErrors: AppointmentFormErrors = {}
+    const newErrors: SessionFormErrors = {}
     
     newErrors.sessionType = validateField('sessionType', formData.sessionType)
     newErrors.date = validateField('date', formData.date)
@@ -147,7 +147,7 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
     return !Object.values(newErrors).some(error => error !== undefined)
   }
 
-  const handleFieldChange = (field: keyof AppointmentFormData, value: string) => {
+  const handleFieldChange = (field: keyof SessionFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     
     // Clear trainer selection if session type changes
@@ -179,7 +179,7 @@ export default function AppointmentForm({ initial, onSubmit, onCancel, submitLab
     
     if (!validateForm()) {
       // Focus first invalid field
-      const firstErrorField = Object.keys(errors).find(key => errors[key as keyof AppointmentFormErrors])
+      const firstErrorField = Object.keys(errors).find(key => errors[key as keyof SessionFormErrors])
       if (firstErrorField && firstErrorField !== 'timeSlot') {
         const element = document.getElementById(firstErrorField)
         element?.focus()

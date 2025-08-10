@@ -1,17 +1,17 @@
 import { listStudents } from '../services/students'
 import { listTrainers } from '../services/trainers'
-import { listAppointments } from '../services/appointments'
-import { Appointment } from '../types/index'
+import { listSessions } from '../services/sessions'
+import { Session } from '../types/index'
 
 function Dashboard() {
   const students = listStudents()
   const trainers = listTrainers()
-  const appointments = listAppointments()
+  const sessions = listSessions()
   
   const today = new Date().toDateString()
-  const todaysAppointments = appointments.filter((appointment: Appointment) => {
-    const appointmentDate = new Date(appointment.date).toDateString()
-    return appointmentDate === today && appointment.status === 'scheduled'
+  const todaysSessions = sessions.filter((session: Session) => {
+    const sessionDate = new Date(session.date).toDateString()
+    return sessionDate === today && session.status === 'scheduled'
   })
 
   return (
@@ -73,7 +73,7 @@ function Dashboard() {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Today's Sessions</dt>
-                  <dd className="text-lg font-medium text-gray-900">{todaysAppointments.length}</dd>
+                  <dd className="text-lg font-medium text-gray-900">{todaysSessions.length}</dd>
                 </dl>
               </div>
             </div>

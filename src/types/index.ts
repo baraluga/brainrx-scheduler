@@ -26,6 +26,7 @@ export interface Session {
   id: string
   studentId: string
   trainerId: string
+  sessionType: SessionType
   date: string
   startTime: string
   endTime: string
@@ -62,7 +63,6 @@ export type SessionType =
   | 'remote'
   | 'gt'
 
-// Back-compat alias if older imports reference AppointmentType
+// Back-compat aliases if older imports reference these types
 export type AppointmentType = SessionType
-
-export type Appointment = Omit<Session, 'programId'> & { sessionType: SessionType }
+export type Appointment = Session

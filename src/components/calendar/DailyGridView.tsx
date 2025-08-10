@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Appointment, SessionType, Student, Trainer } from "../../types/index";
+import { Session, SessionType, Student, Trainer } from "../../types/index";
 
  type DailyGridConfig = {
    businessStartMinutes: number; // minutes from midnight (e.g., 10:00 → 600)
@@ -12,14 +12,14 @@ import { Appointment, SessionType, Student, Trainer } from "../../types/index";
 
 type DailyGridViewProps = {
   date: Date;
-  appointments: Appointment[];
+  appointments: Session[];
   students: Student[];
   trainers: Trainer[];
   config: DailyGridConfig;
-  onSelect?: (appointment: Appointment) => void;
+  onSelect?: (session: Session) => void;
 };
 
-type PositionedAppointment = Appointment & {
+type PositionedSession = Session & {
   laneIndex: number;
 };
 
@@ -70,9 +70,9 @@ function buildTrainerColorMap(trainers: Trainer[]): Map<string, string> {
 }
 
 function placeInLanes(
-  appointments: Appointment[],
+  appointments: Session[],
   slotCount: number
-): PositionedAppointment[] {
+): PositionedSession[] {
   // Greedy lane assignment by start time
   const sorted = [...appointments].sort(
     (a, b) =>
@@ -80,7 +80,7 @@ function placeInLanes(
       a.endTime.localeCompare(b.endTime)
   );
   const laneEndTimes: number[] = new Array(slotCount).fill(0); // minutes from midnight
-  const positioned: PositionedAppointment[] = [];
+  const positioned: PositionedSession[] = [];
 
   for (const appt of sorted) {
     const startMins = hhmmToMinutes(appt.startTime);
@@ -123,7 +123,7 @@ export default function DailyGridView({
   } = config;
 
   const dateKey = date.toDateString();
-  const dayAppointments = useMemo(() => {
+  const daySessions = useMemo(() => {
     return appointments.filter(
       (a) => new Date(a.date).toDateString() === dateKey
     );
@@ -161,38 +161,38 @@ export default function DailyGridView({
 
   const tabletopPositioned = useMemo(() => {
     return placeInLanes(
-      dayAppointments.filter((a) => getSessionType(a) === "training-tabletop"),
+      daySessions.filter((a) => getSessionType(a) === "training-tabletop"),
       slotsPerType["training-tabletop"]
     );
-  }, [dayAppointments, slotsPerType]);
+  }, [daySessions, slotsPerType]);
 
   const digitalPositioned = useMemo(() => {
     return placeInLanes(
-      dayAppointments.filter((a) => getSessionType(a) === "training-digital"),
+      daySessions.filter((a) => getSessionType(a) === "training-digital"),
       slotsPerType["training-digital"]
     );
-  }, [dayAppointments, slotsPerType]);
+  }, [daySessions, slotsPerType]);
 
   const arxPositioned = useMemo(() => {
     return placeInLanes(
-      dayAppointments.filter((a) => getSessionType(a) === "accelerate-rx"),
+      daySessions.filter((a) => getSessionType(a) === "accelerate-rx"),
       slotsPerType["accelerate-rx"]
     );
-  }, [dayAppointments, slotsPerType]);
+  }, [daySessions, slotsPerType]);
 
   const remotePositioned = useMemo(() => {
     return placeInLanes(
-      dayAppointments.filter((a) => getSessionType(a) === "remote"),
+      daySessions.filter((a) => getSessionType(a) === "remote"),
       slotsPerType["remote"]
     );
-  }, [dayAppointments, slotsPerType]);
+  }, [daySessions, slotsPerType]);
 
   const gtPositioned = useMemo(() => {
     return placeInLanes(
-      dayAppointments.filter((a) => getSessionType(a) === "gt"),
+      daySessions.filter((a) => getSessionType(a) === "gt"),
       slotsPerType["gt"]
     );
-  }, [dayAppointments, slotsPerType]);
+  }, [daySessions, slotsPerType]);
 
   const rowHeight = 28; // px per 15 min
   const gridHeight =
@@ -256,7 +256,7 @@ export default function DailyGridView({
     return slotIndex * rowHeight;
   })();
 
-  const renderAppt = (p: PositionedAppointment) => {
+  const renderAppt = (p: PositionedSession) => {
     const startOffset =
       ((hhmmToMinutes(p.startTime) - businessStartMinutes) / incrementMinutes) *
       rowHeight;
@@ -485,7 +485,7 @@ export default function DailyGridView({
               }}
             />
           ))}
-          {/* Appointments */}
+          {/* Sessions */}
           {tabletopPositioned.map(renderAppt)}
           {/* Now line */}
           {nowLineTop !== null && (

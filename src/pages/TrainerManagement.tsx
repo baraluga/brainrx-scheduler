@@ -38,7 +38,7 @@ export default function TrainerManagement() {
     const query = debouncedSearchQuery.toLowerCase()
     return trainers.filter(trainer => {
       const name = (trainer.firstName || trainer.name || '').toLowerCase()
-      return name.includes(query) || trainer.email.toLowerCase().includes(query)
+      return name.includes(query) || trainer.email?.toLowerCase().includes(query)
     })
   }, [trainers, debouncedSearchQuery])
 

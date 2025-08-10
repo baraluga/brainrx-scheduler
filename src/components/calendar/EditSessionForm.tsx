@@ -1,12 +1,12 @@
 import { FormEvent, useMemo, useState } from "react";
-import { Appointment, Trainer } from "../../types";
+import { Session, Trainer } from "../../types";
 import { listTrainers } from "../../services/trainers";
-import { updateAppointment } from "../../services/appointments";
+import { updateSession } from "../../services/sessions";
 import { validateTimeSlot } from "../../utils/validation";
 
 type Props = {
-  initial: Appointment;
-  onSaved: (updated: Appointment) => void;
+  initial: Session;
+  onSaved: (updated: Session) => void;
   onCancel: () => void;
 };
 
@@ -71,7 +71,7 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
       return;
     }
     try {
-      const updated = updateAppointment(initial.id, {
+      const updated = updateSession(initial.id, {
         trainerId,
         date: new Date(date).toISOString(),
         startTime,

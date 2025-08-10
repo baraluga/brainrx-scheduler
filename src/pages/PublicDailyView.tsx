@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { Appointment, SessionType, Student, Trainer } from "../types";
-import { listAppointments } from "../services/appointments";
+import { Session, SessionType, Student, Trainer } from "../types";
+import { listSessions } from "../services/sessions";
 import { listStudents } from "../services/students";
 import { listTrainers } from "../services/trainers";
 import DailyGridView from "../components/calendar/DailyGridView";
 
 export default function PublicDailyView() {
-  const [appointments] = useState<Appointment[]>(listAppointments());
+  const [sessions] = useState<Session[]>(listSessions());
   const [students] = useState<Student[]>(listStudents());
   const [trainers] = useState<Trainer[]>(listTrainers());
   const todayString = () => {
@@ -61,7 +61,7 @@ export default function PublicDailyView() {
         <div className="bg-white/90 backdrop-blur rounded-2xl p-6 md:p-8 shadow-[0_8px_30px_rgba(0,0,0,0.06)] ring-1 ring-primary-100">
           <DailyGridView
             date={toDate(selectedDate)}
-            appointments={appointments}
+            appointments={sessions}
             students={students}
             trainers={trainers}
             config={{ ...GRID_CONFIG, laneWidthPx: 64 }}

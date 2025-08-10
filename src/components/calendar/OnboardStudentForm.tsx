@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState, FormEvent } from 'react'
+import { useMemo, useState, FormEvent } from 'react'
 import { Student, Trainer } from '../../types'
 import { listStudents } from '../../services/students'
 import { listTrainers } from '../../services/trainers'
-import { createAppointment } from '../../services/appointments'
+import { createSession } from '../../services/sessions'
 import { validateTimeSlot } from '../../utils/validation'
 
 type TimeSlot = { startTime: string; endTime: string }
@@ -120,7 +120,7 @@ export default function OnboardStudentForm({ onCreated, onCancel }: Props) {
         if (s) {
           const validation = validateTimeSlot(s.startTime, s.endTime)
           if (validation.ok) {
-            createAppointment({
+            createSession({
               sessionType: 'training-tabletop',
               date: isoDate,
               startTime: s.startTime,

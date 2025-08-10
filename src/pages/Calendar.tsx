@@ -1,17 +1,17 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { Appointment, Student, Trainer, SessionType } from "../types/index";
-import { listAppointments, createAppointment } from "../services/appointments";
+import { Session, Student, Trainer, SessionType } from "../types/index";
+import { listSessions, createSession } from "../services/sessions";
 import { listStudents } from "../services/students";
 import { listTrainers } from "../services/trainers";
-import AppointmentForm from "../components/appointments/AppointmentForm";
+import SessionForm from "../components/sessions/SessionForm";
 import OnboardStudentForm from "../components/calendar/OnboardStudentForm";
 import EditSessionForm from "../components/calendar/EditSessionForm";
 import Modal from "../components/common/Modal";
 import DailyGridView from "../components/calendar/DailyGridView";
 
 function Calendar() {
-  const [appointments, setAppointments] = useState<Appointment[]>(
-    listAppointments()
+  const [sessions, setSessions] = useState<Session[]>(
+    listSessions()
   );
   const [students] = useState<Student[]>(listStudents());
   const [trainers] = useState<Trainer[]>(listTrainers());
@@ -23,7 +23,7 @@ function Calendar() {
     message: string;
     type: "success" | "error";
   } | null>(null);
-  const [editing, setEditing] = useState<Appointment | null>(null);
+  const [editing, setEditing] = useState<Session | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "daily-grid">("daily-grid");
   // Helpers to handle local date input values (YYYY-MM-DD) without UTC shifts
   const toLocalDateInputValue = (d: Date): string => {
@@ -48,31 +48,31 @@ function Calendar() {
     setTimeout(() => setToast(null), 5000);
   };
 
-  const refreshAppointments = () => {
-    setAppointments(listAppointments());
+  const refreshSessions = () => {
+    setSessions(listSessions());
   };
 
-  // Group appointments by date for display
-  const appointmentsByDate = useMemo(() => {
-    const grouped: Record<string, Appointment[]> = {};
+  // Group sessions by date for display
+  const sessionsByDate = useMemo(() => {
+    const grouped: Record<string, Session[]> = {};
 
-    appointments.forEach((appointment) => {
-      const dateKey = new Date(appointment.date).toLocaleDateString();
+    sessions.forEach((session) => {
+      const dateKey = new Date(session.date).toLocaleDateString();
       if (!grouped[dateKey]) {
         grouped[dateKey] = [];
       }
-      grouped[dateKey].push(appointment);
+      grouped[dateKey].push(session);
     });
 
-    // Sort appointments within each date by start time
+    // Sort sessions within each date by start time
     Object.keys(grouped).forEach((date) => {
       grouped[date].sort((a, b) => a.startTime.localeCompare(b.startTime));
     });
 
     return grouped;
-  }, [appointments]);
+  }, [sessions]);
 
-  const sortedDates = Object.keys(appointmentsByDate).sort(
+  const sortedDates = Object.keys(sessionsByDate).sort(
     (a, b) => new Date(a).getTime() - new Date(b).getTime()
   );
 
@@ -141,18 +141,18 @@ function Calendar() {
     } as Record<SessionType, number>,
   };
 
-  const handleCreateAppointment = (
-    data: Omit<Appointment, "id" | "createdAt" | "updatedAt" | "status">
+  const handleCreateSession = (
+    data: Omit<Session, "id" | "createdAt" | "updatedAt" | "status">
   ) => {
     try {
-      const newAppointment = createAppointment(data);
-      refreshAppointments();
+      const newSession = createSession(data);
+      refreshSessions();
       setIsModalOpen(false);
       showToast("Session added successfully");
-      console.log("Appointment created:", newAppointment);
+      console.log("Session created:", newSession);
     } catch (error) {
       showToast("Failed to add session", "error");
-      console.error("Create appointment failed:", error);
+      console.error("Create session failed:", error);
     }
   };
 
@@ -289,7 +289,7 @@ function Calendar() {
 
       {viewMode === "list" ? (
         <div className="bg-white shadow rounded-lg">
-          {appointments.length === 0 ? (
+          {sessions.length === 0 ? (
             <div className="px-4 py-12 text-center">
               <svg
                 className="mx-auto h-12 w-12 text-gray-400"
@@ -347,19 +347,19 @@ function Calendar() {
                       {formatDate(dateKey)}
                     </h3>
                     <div className="space-y-3">
-                      {appointmentsByDate[dateKey].map((appointment) => (
+                      {sessionsByDate[dateKey].map((session) => (
                         <div
-                          key={appointment.id}
+                          key={session.id}
                           className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                         >
                           <div className="flex-1">
                             <div className="flex items-center gap-3">
                               <div className="text-sm font-medium text-gray-900">
-                                {formatTime(appointment.startTime)} -{" "}
-                                {formatTime(appointment.endTime)}
+                                {formatTime(session.startTime)} -{" "}
+                                {formatTime(session.endTime)}
                               </div>
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                {((appointment as any).sessionType || "")
+                                {((session as any).sessionType || "")
                                   .replace("training-", "training (")
                                   .replace("digital", "digital)")
                                   .replace("tabletop", "table-top)") ||
@@ -367,27 +367,27 @@ function Calendar() {
                               </span>
                               <span
                                 className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                  appointment.status === "scheduled"
+                                  session.status === "scheduled"
                                     ? "bg-green-100 text-green-800"
-                                    : appointment.status === "completed"
+                                    : session.status === "completed"
                                     ? "bg-gray-100 text-gray-800"
-                                    : appointment.status === "cancelled"
+                                    : session.status === "cancelled"
                                     ? "bg-red-100 text-red-800"
                                     : "bg-yellow-100 text-yellow-800"
                                 }`}
                               >
-                                {appointment.status}
+                                {session.status}
                               </span>
                             </div>
                             <div className="mt-1 text-sm text-gray-600">
-                              {getStudentName(appointment.studentId)}
+                              {getStudentName(session.studentId)}
                             </div>
                             <div className="text-xs text-gray-500">
-                              Trainer: {getTrainerName(appointment.trainerId)}
+                              Trainer: {getTrainerName(session.trainerId)}
                             </div>
-                            {appointment.notes && (
+                            {session.notes && (
                               <div className="mt-1 text-xs text-gray-500">
-                                Notes: {appointment.notes}
+                                Notes: {session.notes}
                               </div>
                             )}
                           </div>
@@ -416,17 +416,17 @@ function Calendar() {
                             {formatDate(dateKey)}
                           </h3>
                           <div className="space-y-3">
-                            {appointmentsByDate[dateKey].map((appointment) => (
+                            {sessionsByDate[dateKey].map((session) => (
                               <div
-                                key={appointment.id}
+                                key={session.id}
                                 className="flex items-center justify-between p-3 bg-gray-50 rounded"
                               >
                                 <div className="text-sm text-gray-700">
-                                  {formatTime(appointment.startTime)} -{" "}
-                                  {formatTime(appointment.endTime)} •{" "}
-                                  {getStudentName(appointment.studentId)}{" "}
+                                  {formatTime(session.startTime)} -{" "}
+                                  {formatTime(session.endTime)} •{" "}
+                                  {getStudentName(session.studentId)}{" "}
                                   (Trainer:{" "}
-                                  {getTrainerName(appointment.trainerId)})
+                                  {getTrainerName(session.trainerId)})
                                 </div>
                               </div>
                             ))}
@@ -452,11 +452,11 @@ function Calendar() {
           )}
           <DailyGridView
             date={fromLocalDateInputValue(selectedDate)}
-            appointments={appointments}
+            appointments={sessions}
             students={students}
             trainers={trainers}
             config={{ ...GRID_CONFIG, nowOffsetMinutes: 600 }}
-            onSelect={(appt) => setEditing(appt)}
+            onSelect={(session) => setEditing(session)}
           />
         </div>
       )}
@@ -468,8 +468,8 @@ function Calendar() {
         title="Add Session"
         size="lg"
       >
-        <AppointmentForm
-          onSubmit={handleCreateAppointment}
+        <SessionForm
+          onSubmit={handleCreateSession}
           onCancel={() => setIsModalOpen(false)}
         />
       </Modal>
@@ -483,7 +483,7 @@ function Calendar() {
       >
         <OnboardStudentForm
           onCreated={(count) => {
-            refreshAppointments();
+            refreshSessions();
             setIsOnboardOpen(false);
             showToast(`${count} session${count === 1 ? "" : "s"} created`);
           }}
@@ -502,7 +502,7 @@ function Calendar() {
           <EditSessionForm
             initial={editing}
             onSaved={() => {
-              refreshAppointments();
+              refreshSessions();
               setEditing(null);
               showToast("Session updated");
             }}
