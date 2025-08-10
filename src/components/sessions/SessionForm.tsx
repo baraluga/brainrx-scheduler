@@ -53,10 +53,26 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
   }
 
-  const generateStartTimeOptions = (): string[] => {
+  const toLocalDateInputValue = (d: Date): string => {
+    const tzOffset = d.getTimezoneOffset() * 60000
+    return new Date(d.getTime() - tzOffset).toISOString().slice(0, 10)
+  }
+
+  const isTodayDateString = (dateStr: string): boolean => {
+    return dateStr === toLocalDateInputValue(new Date())
+  }
+
+  const generateStartTimeOptions = (dateStr?: string): string[] => {
     const latestStart = BUSINESS_END_MINUTES - 30 // ensure at least 30m duration
     const options: string[] = []
-    for (let t = BUSINESS_START_MINUTES; t <= latestStart; t += INCREMENT) {
+    let startFrom = BUSINESS_START_MINUTES
+    if (dateStr && isTodayDateString(dateStr)) {
+      const now = new Date()
+      const nowMins = now.getHours() * 60 + now.getMinutes()
+      const minToday = Math.ceil(nowMins / INCREMENT) * INCREMENT
+      startFrom = Math.max(BUSINESS_START_MINUTES, minToday)
+    }
+    for (let t = startFrom; t <= latestStart; t += INCREMENT) {
       options.push(minutesToHHMM(t))
     }
     return options
@@ -172,12 +188,23 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
         const today = new Date()
         today.setHours(0, 0, 0, 0)
         if (selectedDate < today) {
-          return 'Warning: Date is in the past'
+          return 'Date cannot be in the past'
         }
         break
       
       case 'startTime':
         if (!value) return 'Start time is required'
+        // If date is today, disallow selecting past time
+        if (formData.date && isTodayDateString(formData.date)) {
+          const [sh, sm] = value.split(':').map(Number)
+          const selMins = sh * 60 + sm
+          const now = new Date()
+          const nowMins = now.getHours() * 60 + now.getMinutes()
+          const minToday = Math.ceil(nowMins / INCREMENT) * INCREMENT
+          if (selMins < minToday) {
+            return 'Start time cannot be in the past'
+          }
+        }
         break
       
       case 'endTime':
@@ -479,6 +506,7 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
             className="w-full bg-transparent outline-none"
             aria-invalid={!!errors.date}
             aria-describedby={errors.date ? 'date-error' : undefined}
+            min={toLocalDateInputValue(new Date())}
           />
         </div>
         {errors.date && (
@@ -506,7 +534,7 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
               aria-describedby={errors.startTime ? 'startTime-error' : undefined}
             >
               <option value="">Select start time</option>
-              {generateStartTimeOptions().map((t) => (
+              {generateStartTimeOptions(formData.date).map((t) => (
                 <option key={t} value={t}>{t}</option>
               ))}
             </select>

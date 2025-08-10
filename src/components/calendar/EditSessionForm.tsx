@@ -57,10 +57,27 @@ const calculateNewStartTime = (newEndTime: string, originalDuration: number): st
   return minutesToHHMM(newStartMins);
 };
 
-const generateStartTimeOptions = (): string[] => {
+const toLocalDateInputValue = (d: Date): string => {
+  const tzOffset = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - tzOffset).toISOString().slice(0, 10);
+};
+
+const isTodayDateString = (dateStr: string): boolean => {
+  return dateStr === toLocalDateInputValue(new Date());
+};
+
+const generateStartTimeOptions = (dateStr?: string): string[] => {
   const latestStart = BUSINESS_END_MINUTES - 30;
   const options: string[] = [];
-  for (let t = BUSINESS_START_MINUTES; t <= latestStart; t += INCREMENT) {
+  let startFrom = BUSINESS_START_MINUTES;
+  if (dateStr && isTodayDateString(dateStr)) {
+    const now = new Date();
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+    // do not allow selecting past times → ceil to next 15-min increment
+    const minToday = Math.ceil(nowMins / INCREMENT) * INCREMENT;
+    startFrom = Math.max(BUSINESS_START_MINUTES, minToday);
+  }
+  for (let t = startFrom; t <= latestStart; t += INCREMENT) {
     options.push(minutesToHHMM(t));
   }
   return options;
@@ -316,6 +333,18 @@ export default function EditSessionForm({ initial, onSaved, onCancel, onCancelle
       setError('This session can no longer be edited.');
       return;
     }
+    // Prevent selecting past time when editing today
+    if (date && isTodayDateString(date)) {
+      const [sh, sm] = startTime.split(":").map(Number);
+      const selMins = sh * 60 + sm;
+      const now = new Date();
+      const nowMins = now.getHours() * 60 + now.getMinutes();
+      const minToday = Math.ceil(nowMins / INCREMENT) * INCREMENT;
+      if (selMins < minToday) {
+        setError('Start time cannot be in the past.');
+        return;
+      }
+    }
     const v = validateTimeSlot(startTime, endTime);
     if (!v.ok) {
       setError(v.message);
@@ -533,12 +562,13 @@ export default function EditSessionForm({ initial, onSaved, onCancel, onCancelle
             }
           }}
         >
-          <input
+            <input
             type="date"
             id="edit-date"
             value={date}
             onChange={(e) => onChangeDate(e.target.value)}
             className="w-full bg-transparent outline-none"
+              min={toLocalDateInputValue(new Date())}
             disabled={isEditingLocked}
           />
         </div>
@@ -561,7 +591,7 @@ export default function EditSessionForm({ initial, onSaved, onCancel, onCancelle
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
               disabled={isEditingLocked}
             >
-              {generateStartTimeOptions().map((t) => (
+              {generateStartTimeOptions(date).map((t) => (
                 <option key={t} value={t}>
                   {t}
                 </option>
