@@ -122,6 +122,7 @@ export default function OnboardStudentForm({ onCreated, onCancel }: Props) {
           if (validation.ok) {
             createSession({
               sessionType: 'training-tabletop',
+              assignedSeat: 1, // Default to seat 1 for onboarding
               date: isoDate,
               startTime: s.startTime,
               endTime: s.endTime,

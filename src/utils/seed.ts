@@ -101,6 +101,7 @@ const seedSessions = (studentIds: string[], trainerIds: string[]): void => {
   const sessions: Omit<Session, 'id' | 'createdAt' | 'updatedAt'>[] = [
     {
       sessionType: 'training-tabletop' as any,
+      assignedSeat: 1,
       studentId: studentIds[0],
       trainerId: trainerIds[0],
       date: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 10, 0).toISOString(),
@@ -111,6 +112,7 @@ const seedSessions = (studentIds: string[], trainerIds: string[]): void => {
     },
     {
       sessionType: 'gt' as any,
+      assignedSeat: 1,
       studentId: studentIds[1],
       trainerId: trainerIds[1],
       date: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 14, 0).toISOString(),
@@ -121,6 +123,7 @@ const seedSessions = (studentIds: string[], trainerIds: string[]): void => {
     },
     {
       sessionType: 'training-digital' as any,
+      assignedSeat: 1,
       studentId: studentIds[2],
       trainerId: trainerIds[2],
       date: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 16, 0).toISOString(),
@@ -130,6 +133,7 @@ const seedSessions = (studentIds: string[], trainerIds: string[]): void => {
     },
     {
       sessionType: 'accelerate-rx' as any,
+      assignedSeat: 1,
       studentId: studentIds[3],
       trainerId: trainerIds[0],
       date: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, 9, 0).toISOString(),
@@ -140,6 +144,7 @@ const seedSessions = (studentIds: string[], trainerIds: string[]): void => {
     },
     {
       sessionType: 'training-tabletop' as any,
+      assignedSeat: 2,
       studentId: studentIds[4],
       trainerId: trainerIds[1],
       date: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1, 11, 0).toISOString(),
@@ -202,6 +207,7 @@ const seedAug9_2025IfLight = (): void => {
     const trainer = (eligibleTrainers.length ? randomFrom(eligibleTrainers) : randomFrom(trainers))
     return {
       sessionType: type,
+      assignedSeat: Math.floor(Math.random() * 3) + 1, // Random seat 1-3
       studentId: student.id,
       trainerId: trainer.id,
       date: new Date(2025, 7, 9, Math.floor(startMins / 60), startMins % 60).toISOString(),

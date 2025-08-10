@@ -1,14 +1,17 @@
-import { useState, useEffect, FormEvent } from 'react'
+import { useState, useEffect, FormEvent, useMemo } from 'react'
 import { Session, SessionType, Student, Trainer } from '../../types/index'
 import { listStudents } from '../../services/students'
 import { listTrainers } from '../../services/trainers'
+import { listSessions } from '../../services/sessions'
 import { validateTimeSlot } from '../../utils/validation'
+import { getAvailableSeats } from '../../utils/seatAvailability'
 
 interface SessionFormData {
   sessionType: SessionType
   date: string
   startTime: string
   endTime: string
+  assignedSeat: number | ''
   studentId: string
   trainerId: string
   notes: string
@@ -20,6 +23,7 @@ interface SessionFormErrors {
   startTime?: string
   endTime?: string
   timeSlot?: string
+  assignedSeat?: string
   studentId?: string
   trainerId?: string
 }
@@ -34,6 +38,7 @@ interface SessionFormProps {
 export default function SessionForm({ initial, onSubmit, onCancel, submitLabel = 'Add Session' }: SessionFormProps) {
   const [students] = useState<Student[]>(listStudents())
   const [trainers] = useState<Trainer[]>(listTrainers())
+  const [existingSessions] = useState<Session[]>(listSessions())
   
   // Business hours and time utilities
   const BUSINESS_START_MINUTES = 10 * 60 // 10:00
@@ -68,11 +73,22 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
     return options
   }
 
+  const SEAT_CONFIG = {
+    slotsPerType: {
+      "training-tabletop": 10,
+      "training-digital": 10,
+      "accelerate-rx": 3,
+      remote: 4,
+      gt: 4,
+    } as Record<SessionType, number>,
+  }
+
   const [formData, setFormData] = useState<SessionFormData>({
     sessionType: (initial as any)?.sessionType || 'training-tabletop',
     date: initial?.date ? initial.date.split('T')[0] : '',
     startTime: initial?.startTime || '',
     endTime: initial?.endTime || '',
+    assignedSeat: initial?.assignedSeat || '',
     studentId: initial?.studentId || '',
     trainerId: initial?.trainerId || '',
     notes: initial?.notes || ''
@@ -84,6 +100,32 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
   const availableTrainers = formData.sessionType === 'gt'
     ? trainers.filter(trainer => trainer.canDoGtAssessments)
     : trainers
+
+  // Get available seats based on session type and time slot
+  const availableSeats = useMemo(() => {
+    if (!formData.sessionType || !formData.date || !formData.startTime || !formData.endTime) {
+      return []
+    }
+    return getAvailableSeats(
+      formData.sessionType,
+      new Date(formData.date).toISOString(),
+      formData.startTime,
+      formData.endTime,
+      existingSessions,
+      SEAT_CONFIG
+    )
+  }, [formData.sessionType, formData.date, formData.startTime, formData.endTime, existingSessions])
+
+  // Auto-select first available seat when conditions change
+  useEffect(() => {
+    if (availableSeats.length > 0 && !formData.assignedSeat) {
+      setFormData(prev => ({ ...prev, assignedSeat: availableSeats[0] }))
+    }
+    // Clear seat if it's no longer available
+    else if (formData.assignedSeat && !availableSeats.includes(Number(formData.assignedSeat))) {
+      setFormData(prev => ({ ...prev, assignedSeat: availableSeats[0] || '' }))
+    }
+  }, [availableSeats, formData.assignedSeat])
 
   const validateField = (name: string, value: string): string | undefined => {
     switch (name) {
@@ -116,6 +158,10 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
       case 'trainerId':
         if (!value) return 'Trainer is required'
         break
+      
+      case 'assignedSeat':
+        if (!value) return 'Seat is required'
+        break
     }
     return undefined
   }
@@ -137,6 +183,7 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
     newErrors.date = validateField('date', formData.date)
     newErrors.startTime = validateField('startTime', formData.startTime)
     newErrors.endTime = validateField('endTime', formData.endTime)
+    newErrors.assignedSeat = validateField('assignedSeat', String(formData.assignedSeat))
     newErrors.studentId = validateField('studentId', formData.studentId)
     newErrors.trainerId = validateField('trainerId', formData.trainerId)
     
@@ -152,15 +199,20 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
     
     // Clear trainer selection if session type changes
     if (field === 'sessionType') {
-      setFormData(prev => ({ ...prev, trainerId: '' }))
+      setFormData(prev => ({ ...prev, trainerId: '', assignedSeat: '' }))
     }
 
     // If start time changes, ensure end time remains valid; otherwise clear it
     if (field === 'startTime') {
       const allowedEnds = new Set(generateEndTimeOptions(value))
       if (!allowedEnds.has(formData.endTime)) {
-        setFormData(prev => ({ ...prev, endTime: '' }))
+        setFormData(prev => ({ ...prev, endTime: '', assignedSeat: '' }))
       }
+    }
+
+    // Clear assigned seat if date or times change
+    if (field === 'date' || field === 'endTime') {
+      setFormData(prev => ({ ...prev, assignedSeat: '' }))
     }
     
     // Validate this field and update errors
@@ -189,6 +241,7 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
 
     const submitData = {
       sessionType: formData.sessionType,
+      assignedSeat: Number(formData.assignedSeat),
       date: new Date(formData.date).toISOString(),
       startTime: formData.startTime,
       endTime: formData.endTime,
@@ -388,6 +441,46 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
           {errors.timeSlot}
         </p>
       )}
+
+      {/* Seat */}
+      <div>
+        <label htmlFor="assignedSeat" className="block text-sm font-medium text-gray-700 mb-2">
+          Seat *
+        </label>
+        <select
+          id="assignedSeat"
+          value={formData.assignedSeat}
+          onChange={(e) => handleFieldChange('assignedSeat', e.target.value)}
+          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+            errors.assignedSeat ? 'border-red-500' : 'border-gray-300'
+          }`}
+          aria-invalid={!!errors.assignedSeat}
+          aria-describedby={errors.assignedSeat ? 'assignedSeat-error' : undefined}
+          disabled={availableSeats.length === 0}
+        >
+          <option value="">
+            {availableSeats.length === 0 
+              ? 'No seats available for selected time' 
+              : 'Select a seat'
+            }
+          </option>
+          {availableSeats.map((seat) => (
+            <option key={seat} value={seat}>
+              {seat}
+            </option>
+          ))}
+        </select>
+        {errors.assignedSeat && (
+          <p id="assignedSeat-error" className="mt-1 text-sm text-red-600">
+            {errors.assignedSeat}
+          </p>
+        )}
+        {availableSeats.length === 0 && formData.sessionType && formData.date && formData.startTime && formData.endTime && (
+          <p className="mt-1 text-sm text-yellow-600">
+            All seats for {formData.sessionType.replace('-', ' ')} are occupied during this time slot.
+          </p>
+        )}
+      </div>
 
       {/* Student */}
       <div>

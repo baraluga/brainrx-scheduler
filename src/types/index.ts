@@ -27,6 +27,7 @@ export interface Session {
   studentId: string
   trainerId: string
   sessionType: SessionType
+  assignedSeat: number
   date: string
   startTime: string
   endTime: string

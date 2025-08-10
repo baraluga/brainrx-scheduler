@@ -22,6 +22,10 @@ export function runMigrations(): void {
     migrateEnsureNames()
     localStorage.setItem(SCHEMA_VERSION_KEY, '6')
   }
+  if (currentVersion < 7) {
+    migrateAddAssignedSeats()
+    localStorage.setItem(SCHEMA_VERSION_KEY, '7')
+  }
 }
 
 function migrateRemovePrograms(): void {
@@ -128,6 +132,20 @@ function migrateEnsureNames(): void {
     saveCollection(STORAGE_KEYS.trainers, fixedTrainers)
   } catch (error) {
     console.error('Migration (ensure names) failed:', error)
+  }
+}
+
+function migrateAddAssignedSeats(): void {
+  try {
+    const sessions = loadCollection<any>(STORAGE_KEYS.appointments)
+    const sessionsWithSeats = sessions.map((session) => {
+      // If session already has assignedSeat, keep it; otherwise assign seat 1 as default
+      if (session?.assignedSeat) return session
+      return { ...session, assignedSeat: 1 }
+    })
+    saveCollection(STORAGE_KEYS.appointments, sessionsWithSeats)
+  } catch (error) {
+    console.error('Migration (add assigned seats) failed:', error)
   }
 }
 

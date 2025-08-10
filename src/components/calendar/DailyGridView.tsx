@@ -69,40 +69,15 @@ function buildTrainerColorMap(trainers: Trainer[]): Map<string, string> {
   return map;
 }
 
-function placeInLanes(
+function placeInSeats(
   appointments: Session[],
   slotCount: number
 ): PositionedSession[] {
-  // Greedy lane assignment by start time
-  const sorted = [...appointments].sort(
-    (a, b) =>
-      a.startTime.localeCompare(b.startTime) ||
-      a.endTime.localeCompare(b.endTime)
-  );
-  const laneEndTimes: number[] = new Array(slotCount).fill(0); // minutes from midnight
-  const positioned: PositionedSession[] = [];
-
-  for (const appt of sorted) {
-    const startMins = hhmmToMinutes(appt.startTime);
-    const endMins = hhmmToMinutes(appt.endTime);
-    let placed = false;
-    for (let lane = 0; lane < slotCount; lane++) {
-      if (startMins >= laneEndTimes[lane]) {
-        laneEndTimes[lane] = endMins;
-        positioned.push({ ...appt, laneIndex: lane });
-        placed = true;
-        break;
-      }
-    }
-    if (!placed) {
-      // Overflow: place in last lane and let it visually overlap; add marker via negative laneIndex is too complex, so keep last lane
-      const last = slotCount - 1;
-      positioned.push({ ...appt, laneIndex: last });
-      laneEndTimes[last] = Math.max(laneEndTimes[last], endMins);
-    }
-  }
-
-  return positioned;
+  // Use assigned seat from session data (1-indexed) and convert to 0-indexed for display
+  return appointments.map(appt => ({
+    ...appt,
+    laneIndex: Math.max(0, Math.min(appt.assignedSeat - 1, slotCount - 1)) // Convert 1-indexed to 0-indexed and clamp to valid range
+  }));
 }
 
 export default function DailyGridView({
@@ -160,35 +135,35 @@ export default function DailyGridView({
   const timeSlotsNoFirst = useMemo(() => timeSlots.slice(1), [timeSlots])
 
   const tabletopPositioned = useMemo(() => {
-    return placeInLanes(
+    return placeInSeats(
       daySessions.filter((a) => getSessionType(a) === "training-tabletop"),
       slotsPerType["training-tabletop"]
     );
   }, [daySessions, slotsPerType]);
 
   const digitalPositioned = useMemo(() => {
-    return placeInLanes(
+    return placeInSeats(
       daySessions.filter((a) => getSessionType(a) === "training-digital"),
       slotsPerType["training-digital"]
     );
   }, [daySessions, slotsPerType]);
 
   const arxPositioned = useMemo(() => {
-    return placeInLanes(
+    return placeInSeats(
       daySessions.filter((a) => getSessionType(a) === "accelerate-rx"),
       slotsPerType["accelerate-rx"]
     );
   }, [daySessions, slotsPerType]);
 
   const remotePositioned = useMemo(() => {
-    return placeInLanes(
+    return placeInSeats(
       daySessions.filter((a) => getSessionType(a) === "remote"),
       slotsPerType["remote"]
     );
   }, [daySessions, slotsPerType]);
 
   const gtPositioned = useMemo(() => {
-    return placeInLanes(
+    return placeInSeats(
       daySessions.filter((a) => getSessionType(a) === "gt"),
       slotsPerType["gt"]
     );

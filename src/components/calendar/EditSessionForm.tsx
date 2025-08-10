@@ -1,8 +1,10 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState, useEffect } from "react";
 import { Session, Trainer } from "../../types";
 import { listTrainers } from "../../services/trainers";
+import { listSessions } from "../../services/sessions";
 import { updateSession } from "../../services/sessions";
 import { validateTimeSlot } from "../../utils/validation";
+import { getAvailableSeats } from "../../utils/seatAvailability";
 
 type Props = {
   initial: Session;
@@ -44,23 +46,71 @@ const generateEndTimeOptions = (startTime?: string): string[] => {
 
 export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
   const [trainers] = useState<Trainer[]>(listTrainers());
+  const [existingSessions] = useState<Session[]>(listSessions());
   const [trainerId, setTrainerId] = useState(initial.trainerId);
   const [date, setDate] = useState(initial.date.split("T")[0]);
   const [startTime, setStartTime] = useState(initial.startTime);
   const [endTime, setEndTime] = useState(initial.endTime);
+  const [assignedSeat, setAssignedSeat] = useState(initial.assignedSeat);
   const [error, setError] = useState<string | null>(null);
 
+  const SEAT_CONFIG = {
+    slotsPerType: {
+      "training-tabletop": 10,
+      "training-digital": 10,
+      "accelerate-rx": 3,
+      remote: 4,
+      gt: 4,
+    } as Record<string, number>,
+  };
+
+  // Get available seats for the current time slot
+  const availableSeats = useMemo(() => {
+    if (!date || !startTime || !endTime) return [];
+    return getAvailableSeats(
+      initial.sessionType,
+      new Date(date).toISOString(),
+      startTime,
+      endTime,
+      existingSessions,
+      SEAT_CONFIG,
+      initial.id // Exclude current session from conflict check
+    );
+  }, [date, startTime, endTime, existingSessions, initial.sessionType, initial.id]);
+
   const canSave = useMemo(() => {
-    if (!trainerId || !date || !startTime || !endTime) return false;
+    if (!trainerId || !date || !startTime || !endTime || !assignedSeat) return false;
     const v = validateTimeSlot(startTime, endTime);
     return v.ok;
-  }, [trainerId, date, startTime, endTime]);
+  }, [trainerId, date, startTime, endTime, assignedSeat]);
 
   const onChangeStart = (val: string) => {
     setStartTime(val);
     const allowed = new Set(generateEndTimeOptions(val));
-    if (!allowed.has(endTime)) setEndTime("");
+    if (!allowed.has(endTime)) {
+      setEndTime("");
+      setAssignedSeat(0); // Reset seat when time changes
+    }
   };
+
+  const onChangeEnd = (val: string) => {
+    setEndTime(val);
+    setAssignedSeat(0); // Reset seat when time changes
+  };
+
+  const onChangeDate = (val: string) => {
+    setDate(val);
+    setAssignedSeat(0); // Reset seat when date changes
+  };
+
+  // Auto-select seat when it becomes invalid or when starting with no seat
+  useEffect(() => {
+    if (availableSeats.length > 0) {
+      if (!assignedSeat || !availableSeats.includes(assignedSeat)) {
+        setAssignedSeat(availableSeats.includes(initial.assignedSeat) ? initial.assignedSeat : availableSeats[0]);
+      }
+    }
+  }, [availableSeats, assignedSeat, initial.assignedSeat]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -73,6 +123,7 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
     try {
       const updated = updateSession(initial.id, {
         trainerId,
+        assignedSeat,
         date: new Date(date).toISOString(),
         startTime,
         endTime,
@@ -118,7 +169,7 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
           <input
             type="date"
             value={date}
-            onChange={(e) => setDate(e.target.value)}
+            onChange={(e) => onChangeDate(e.target.value)}
             className="w-full border rounded-md px-3 py-2"
           />
         </div>
@@ -144,7 +195,7 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
           </label>
           <select
             value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
+            onChange={(e) => onChangeEnd(e.target.value)}
             className="w-full border rounded-md px-3 py-2"
             disabled={!startTime}
           >
@@ -158,6 +209,36 @@ export default function EditSessionForm({ initial, onSaved, onCancel }: Props) {
             ))}
           </select>
         </div>
+      </div>
+
+      {/* Seat */}
+      <div>
+        <label className="block text-sm font-medium text-ink-700 mb-2">
+          Seat *
+        </label>
+        <select
+          value={assignedSeat}
+          onChange={(e) => setAssignedSeat(Number(e.target.value))}
+          className="w-full border rounded-md px-3 py-2"
+          disabled={availableSeats.length === 0}
+        >
+          <option value={0}>
+            {availableSeats.length === 0 
+              ? 'No seats available for selected time' 
+              : 'Select a seat'
+            }
+          </option>
+          {availableSeats.map((seat) => (
+            <option key={seat} value={seat}>
+              {seat}
+            </option>
+          ))}
+        </select>
+        {availableSeats.length === 0 && date && startTime && endTime && (
+          <p className="mt-1 text-sm text-yellow-600">
+            All seats for {initial.sessionType.replace('-', ' ')} are occupied during this time slot.
+          </p>
+        )}
       </div>
 
       <div className="flex gap-3 pt-2">
