@@ -4,6 +4,7 @@ import { listSessions } from "../services/sessions";
 import { listStudents } from "../services/students";
 import { listTrainers } from "../services/trainers";
 import DailyGridView from "../components/calendar/DailyGridView";
+import UpcomingList from "../components/calendar/UpcomingList";
 
 export default function PublicDailyView() {
   const [sessions] = useState<Session[]>(listSessions());
@@ -96,43 +97,7 @@ export default function PublicDailyView() {
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
   };
 
-  const formatTime = (timeString: string) => {
-    const [hours, minutes] = timeString.split(":").map(Number);
-    const period = hours >= 12 ? "PM" : "AM";
-    const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
-    return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`;
-  };
-
-  const getTypeLabel = (t: SessionType) => {
-    switch (t) {
-      case "training-tabletop":
-        return "Training (Table-top)";
-      case "training-digital":
-        return "Training (Digital)";
-      case "accelerate-rx":
-        return "AccelerateRx";
-      case "remote":
-        return "Remote";
-      case "gt":
-        return "GT";
-      default:
-        return "Session";
-    }
-  };
-
-  const getStudentName = (session: Session) => {
-    if (session.studentId) {
-      const s = students.find((x) => x.id === session.studentId);
-      return s?.firstName || s?.name || "Unknown Student";
-    }
-    if (session.clientName) return session.clientName;
-    return "Unknown Client";
-  };
-
-  const getTrainerName = (trainerId: string) => {
-    const t = trainers.find((x) => x.id === trainerId);
-    return t?.firstName || t?.name || "Unknown Trainer";
-  };
+  // Rendering helpers moved into `UpcomingList` component
 
   const upcomingSessions = (() => {
     const NOW_OFFSET_MINS = -10 * 60; // dev: shift current time back 10h
@@ -209,7 +174,20 @@ export default function PublicDailyView() {
 
   return (
     <div className="min-h-screen bg-warm-50">
-      <div className="max-w-[1600px] mx-auto px-8 py-12">
+      {/* Mobile-only: Upcoming Sessions focused view */}
+      <div className="md:hidden px-4 py-6">
+        <UpcomingList
+          title="Upcoming Today"
+          sessions={upcomingSessions}
+          students={students}
+          trainers={trainers}
+          variant="mobile"
+        />
+      </div>
+
+      {/* Desktop/tablet view */}
+      <div className="hidden md:block">
+        <div className="max-w-[1600px] mx-auto px-8 py-12">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl sm:text-3xl font-extrabold text-ink-900 flex items-center gap-3">
             <span className="inline-flex items-center justify-center w-2 h-2 rounded-full bg-green-500 animate-pulse shadow" />
@@ -246,51 +224,14 @@ export default function PublicDailyView() {
           )}
           {/* Upcoming Sessions (25%) */}
           <aside className={`w-1/4 ${isFullscreen ? "pl-8 pt-12" : ""}`}>
-            <div className="bg-white/90 backdrop-blur rounded-2xl p-5 shadow-[0_8px_30px_rgba(0,0,0,0.06)] ring-1 ring-primary-100 overflow-visible">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-ink-900">
-                  Upcoming Sessions
-                </h2>
-              </div>
-              <div className="mt-3 divide-y divide-gray-100 max-h-[70vh] overflow-y-auto overflow-x-visible no-scrollbar">
-                {upcomingSessions.length === 0 ? (
-                  <div className="py-6 text-sm text-ink-500 text-center">
-                    No upcoming sessions
-                  </div>
-                ) : (
-                  upcomingSessions.map((s) => (
-                    <div
-                      key={s.id}
-                      className="py-3 flex items-start justify-between"
-                    >
-                      <div className="flex-1">
-                        {/* 1. Time slot (primary) */}
-                        <div className="text-[15px] md:text-base font-extrabold text-ink-900">
-                          {formatTime(s.startTime)} – {formatTime(s.endTime)}
-                        </div>
-                        {/* 2. Session type + seat (secondary) */}
-                        <div className="mt-1 flex flex-wrap items-center gap-2 pr-1 pl-[1px]">
-                          <span className="inline-flex items-center pl-3 pr-2 py-0.5 rounded-full text-[11px] font-semibold bg-primary-50 text-primary-700 ring-1 ring-primary-200">
-                            {getTypeLabel(s.sessionType)}
-                          </span>
-                          {s.assignedSeat ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-gray-50 text-gray-700 ring-1 ring-gray-200">
-                              Seat {s.assignedSeat}
-                            </span>
-                          ) : null}
-                        </div>
-                        {/* 3. Student + Trainer (tertiary) */}
-                        <div className="mt-1 text-xs text-ink-700">
-                          {getStudentName(s)}
-                          <span className="mx-1 text-ink-400">•</span>
-                          Trainer: {getTrainerName(s.trainerId)}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
+            <UpcomingList
+              title="Upcoming Sessions"
+              sessions={upcomingSessions}
+              students={students}
+              trainers={trainers}
+              variant="sidebar"
+              maxHeightClass="max-h-[70vh]"
+            />
           </aside>
 
           {/* Grid (75%) */}
@@ -323,6 +264,7 @@ export default function PublicDailyView() {
               </div>
             )}
           </section>
+        </div>
         </div>
       </div>
     </div>
