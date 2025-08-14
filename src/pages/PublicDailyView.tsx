@@ -91,28 +91,14 @@ export default function PublicDailyView() {
     return h * 60 + m;
   };
 
-  const minsToHHMM = (mins: number) => {
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-  };
-
   // Rendering helpers moved into `UpcomingList` component
 
   const upcomingSessions = (() => {
-    const NOW_OFFSET_MINS = -10 * 60; // dev: shift current time back 10h
     const baseDate = toDate(selectedDate);
     const dateKey = baseDate.toDateString();
     const today = new Date();
     const isToday = today.toDateString() === dateKey;
-    const mockedNowMins =
-      (today.getHours() * 60 + today.getMinutes() + NOW_OFFSET_MINS + 1440) %
-      1440;
-    // When testing with an offset that lands later than business start, start from the day start
-    const thresholdMins = Math.min(
-      mockedNowMins,
-      GRID_CONFIG.businessStartMinutes
-    );
+    const thresholdMins = today.getHours() * 60 + today.getMinutes();
     const base = sessions
       .filter(
         (s) =>
@@ -120,56 +106,8 @@ export default function PublicDailyView() {
           s.status !== "cancelled"
       )
       .filter((s) => (isToday ? toMins(s.startTime) >= thresholdMins : true))
-      .sort((a, b) => a.startTime.localeCompare(b.startTime))
-      .slice(0, 20);
-
-    // Ensure at least 50 items by appending dummy upcoming entries (display-only)
-    const desiredCount = 50;
-    if (base.length >= desiredCount) return base;
-
-    const result = [...base];
-    const trainerIds = trainers.length > 0 ? trainers.map((t) => t.id) : [""];
-    const sessionTypes: SessionType[] = [
-      "training-tabletop",
-      "training-digital",
-      "accelerate-rx",
-      "remote",
-      "gt",
-    ];
-
-    // Generate dummy sessions every 15 minutes across the day, cycling metadata
-    let t = thresholdMins;
-    let i = 0;
-    while (result.length < desiredCount) {
-      const startMins = t;
-      const endMins = Math.min(startMins + 30, GRID_CONFIG.businessEndMinutes);
-      const trainerId = trainerIds[i % trainerIds.length];
-      const sessionType = sessionTypes[i % sessionTypes.length];
-      result.push({
-        id: `dummy-${i}`,
-        trainerId,
-        sessionType,
-        assignedSeat: (i % 6) + 1,
-        date: baseDate.toISOString(),
-        startTime: minsToHHMM(startMins),
-        endTime: minsToHHMM(endMins),
-        status: "scheduled",
-        clientName: `Demo Student ${i + 1}`,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-
-      i += 1;
-      t += GRID_CONFIG.incrementMinutes; // step 15m
-      if (t >= GRID_CONFIG.businessEndMinutes) {
-        // wrap to business start if we ran out of day
-        t = GRID_CONFIG.businessStartMinutes;
-      }
-    }
-
-    // Sort the combined list by time for display
-    result.sort((a, b) => a.startTime.localeCompare(b.startTime));
-    return result;
+      .sort((a, b) => a.startTime.localeCompare(b.startTime));
+    return base;
   })();
 
   // Mobile trainer filtering state and derived list
@@ -272,11 +210,7 @@ export default function PublicDailyView() {
                 appointments={sessions}
                 students={students}
                 trainers={trainers}
-                config={{
-                  ...GRID_CONFIG,
-                  laneWidthPx: 64,
-                  nowOffsetMinutes: -10 * 60,
-                }}
+                config={{ ...GRID_CONFIG, laneWidthPx: 64 }}
               />
             ) : (
               <div className="bg-white/90 backdrop-blur rounded-2xl p-6 md:p-8 shadow-[0_8px_30px_rgba(0,0,0,0.06)] ring-1 ring-primary-100">
@@ -285,11 +219,7 @@ export default function PublicDailyView() {
                   appointments={sessions}
                   students={students}
                   trainers={trainers}
-                  config={{
-                    ...GRID_CONFIG,
-                    laneWidthPx: 64,
-                    nowOffsetMinutes: -10 * 60,
-                  }}
+                  config={{ ...GRID_CONFIG, laneWidthPx: 64 }}
                 />
               </div>
             )}
