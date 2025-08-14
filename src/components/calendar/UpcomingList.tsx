@@ -56,7 +56,7 @@ function SessionRow({ s, students, trainers }: { s: Session; students: Student[]
           {formatTime(s.startTime)} – {formatTime(s.endTime)}
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-2 pr-1 pl-[1px]">
-          <span className="inline-flex items-center pl-3 pr-2 py-0.5 rounded-full text-[11px] font-semibold bg-primary-50 text-primary-700 ring-1 ring-primary-200">
+          <span className="inline-flex items-center pl-2 pr-2 py-0.5 rounded-full text-[11px] font-semibold bg-primary-50 text-primary-700 ring-1 ring-primary-200">
             {getTypeLabel(s.sessionType)}
           </span>
           {s.assignedSeat ? (

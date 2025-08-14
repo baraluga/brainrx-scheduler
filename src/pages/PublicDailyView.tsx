@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Session, SessionType, Student, Trainer } from "../types";
 import { listSessions } from "../services/sessions";
 import { listStudents } from "../services/students";
@@ -172,13 +172,43 @@ export default function PublicDailyView() {
     return result;
   })();
 
+  // Mobile trainer filtering state and derived list
+  const [mobileTrainerFilter, setMobileTrainerFilter] = useState<string | null>(null);
+  const mobileTrainerOptions = useMemo(() => {
+    const base = [{ id: "", label: "All Trainers" }];
+    return base.concat(
+      trainers.map((t) => ({ id: t.id, label: t.firstName || t.name || "Trainer" }))
+    );
+  }, [trainers]);
+  const mobileFilteredUpcoming = useMemo(() => {
+    if (!mobileTrainerFilter) return upcomingSessions;
+    return upcomingSessions.filter((s) => s.trainerId === mobileTrainerFilter);
+  }, [upcomingSessions, mobileTrainerFilter]);
+
   return (
     <div className="min-h-screen bg-warm-50">
       {/* Mobile-only: Upcoming Sessions focused view */}
       <div className="md:hidden px-4 py-6">
+        {/* Trainer filter (mobile dropdown) */}
+        <div className="sticky top-0 z-10 bg-warm-50 -mx-4 px-4 pt-1 pb-3">
+          <label className="block text-[12px] text-ink-600 mb-1">Filter by trainer</label>
+          <select
+            aria-label="Filter by trainer"
+            value={mobileTrainerFilter ?? ""}
+            onChange={(e) => setMobileTrainerFilter(e.target.value === "" ? null : e.target.value)}
+            className="w-full px-3 py-2 rounded-lg bg-white text-ink-900 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            {mobileTrainerOptions.map((opt) => (
+              <option key={opt.id || "all"} value={opt.id}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <UpcomingList
           title="Upcoming Today"
-          sessions={upcomingSessions}
+          sessions={mobileFilteredUpcoming}
           students={students}
           trainers={trainers}
           variant="mobile"
