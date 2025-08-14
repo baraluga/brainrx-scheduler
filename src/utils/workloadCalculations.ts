@@ -6,17 +6,15 @@ export interface TrainerWorkload {
   trainerId: string
   trainerName: string
   studentCount: number
-  status: 'ideal' | 'approaching' | 'overloaded'
+  status: 'ideal' | 'overloaded'
 }
 
 export interface WorkloadConfig {
   idealStudentCount: number
-  approachingThreshold: number
 }
 
 export const DEFAULT_WORKLOAD_CONFIG: WorkloadConfig = {
-  idealStudentCount: 3,
-  approachingThreshold: 1.5
+  idealStudentCount: 3
 }
 
 export function calculateTrainerWorkloads(
@@ -68,22 +66,14 @@ export function calculateTrainerWorkloads(
 function getWorkloadStatus(
   studentCount: number, 
   config: WorkloadConfig
-): 'ideal' | 'approaching' | 'overloaded' {
-  if (studentCount <= config.idealStudentCount) {
-    return 'ideal'
-  } else if (studentCount <= config.idealStudentCount * config.approachingThreshold) {
-    return 'approaching'
-  } else {
-    return 'overloaded'
-  }
+): 'ideal' | 'overloaded' {
+  return studentCount <= config.idealStudentCount ? 'ideal' : 'overloaded'
 }
 
-export function getStatusColor(status: 'ideal' | 'approaching' | 'overloaded'): string {
+export function getStatusColor(status: 'ideal' | 'overloaded'): string {
   switch (status) {
     case 'ideal':
       return '#10b981'
-    case 'approaching':
-      return '#f59e0b'
     case 'overloaded':
       return '#ef4444'
   }
@@ -92,7 +82,6 @@ export function getStatusColor(status: 'ideal' | 'approaching' | 'overloaded'): 
 export function getWorkloadSummary(workloads: TrainerWorkload[]) {
   const total = workloads.length
   const overloaded = workloads.filter(w => w.status === 'overloaded').length
-  const approaching = workloads.filter(w => w.status === 'approaching').length
   const ideal = workloads.filter(w => w.status === 'ideal').length
   const averageLoad = total > 0 
     ? Math.round((workloads.reduce((sum, w) => sum + w.studentCount, 0) / total) * 10) / 10 
@@ -101,7 +90,6 @@ export function getWorkloadSummary(workloads: TrainerWorkload[]) {
   return {
     total,
     overloaded,
-    approaching,
     ideal,
     averageLoad
   }
