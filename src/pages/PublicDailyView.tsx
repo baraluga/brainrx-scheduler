@@ -231,9 +231,21 @@ export default function PublicDailyView() {
             </button>
           </div>
         </div>
-        <div className="flex gap-6 items-start">
+        <div
+          ref={gridContainerRef}
+          className={`flex gap-6 items-start relative ${isFullscreen ? "bg-warm-50" : ""}`}
+        >
+          {isFullscreen && (
+            <button
+              onClick={exitFullscreen}
+              className="absolute top-2 right-2 z-10 px-2 py-1 rounded bg-white border border-gray-300 shadow hover:bg-gray-50"
+              title="Exit Fullscreen"
+            >
+              ✕
+            </button>
+          )}
           {/* Upcoming Sessions (25%) */}
-          <aside className="w-1/4">
+          <aside className={`w-1/4 ${isFullscreen ? "pl-8 pt-12" : ""}`}>
             <div className="bg-white/90 backdrop-blur rounded-2xl p-5 shadow-[0_8px_30px_rgba(0,0,0,0.06)] ring-1 ring-primary-100 overflow-visible">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-bold text-ink-900">
@@ -282,16 +294,7 @@ export default function PublicDailyView() {
           </aside>
 
           {/* Grid (75%) */}
-          <section ref={gridContainerRef} className="relative w-3/4">
-            {isFullscreen && (
-              <button
-                onClick={exitFullscreen}
-                className="absolute top-2 right-2 z-10 px-2 py-1 rounded bg-white border border-gray-300 shadow hover:bg-gray-50"
-                title="Exit Fullscreen"
-              >
-                ✕
-              </button>
-            )}
+          <section className="relative w-3/4">
             {isFullscreen ? (
               <DailyGridView
                 date={toDate(selectedDate)}
