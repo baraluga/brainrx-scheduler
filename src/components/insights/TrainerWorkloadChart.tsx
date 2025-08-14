@@ -9,8 +9,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { listSessions } from "../../services/sessions";
-import { listTrainers } from "../../services/trainers";
 import {
   calculateTrainerWorkloads,
   DEFAULT_WORKLOAD_CONFIG,
@@ -59,12 +57,7 @@ export default function TrainerWorkloadChart({
   onConfigChange,
 }: TrainerWorkloadChartProps) {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
-  const [showDebug, setShowDebug] = useState(false);
   const workloads = calculateTrainerWorkloads(config);
-
-  // Debug data
-  const allSessions = listSessions();
-  const allTrainers = listTrainers();
 
   const handleConfigChange = (updates: Partial<WorkloadConfig>) => {
     const newConfig = { ...config, ...updates };
@@ -82,20 +75,12 @@ export default function TrainerWorkloadChart({
             Recent student assignments per trainer (last 2 weeks)
           </p>
         </div>
-        <div className="flex space-x-2">
-          <button
-            onClick={() => setShowDebug(!showDebug)}
-            className="px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
-          >
-            Debug
-          </button>
-          <button
-            onClick={() => setIsConfigOpen(!isConfigOpen)}
-            className="px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
-          >
-            Configure
-          </button>
-        </div>
+        <button
+          onClick={() => setIsConfigOpen(!isConfigOpen)}
+          className="px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
+        >
+          Configure
+        </button>
       </div>
 
       {isConfigOpen && (
@@ -117,43 +102,10 @@ export default function TrainerWorkloadChart({
               }
               className="block w-40 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
-            <p className="text-xs text-gray-600 mt-1">
-              Students ≤ {config.idealStudentCount}: Ideal • Students &gt;{" "}
-              {config.idealStudentCount}: Overloaded
-            </p>
           </div>
         </div>
       )}
 
-      {showDebug && (
-        <div className="bg-red-50 p-4 rounded-lg space-y-4">
-          <h4 className="font-medium text-red-900">Debug Information</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <strong>Raw Data:</strong>
-              <p>Total trainers: {allTrainers.length}</p>
-              <p>Total sessions: {allSessions.length}</p>
-              <p>
-                Scheduled sessions:{" "}
-                {allSessions.filter((s) => s.status === "scheduled").length}
-              </p>
-            </div>
-            <div>
-              <strong>Sessions with studentId:</strong>
-              <p>
-                {allSessions.filter((s) => s.studentId).length} out of{" "}
-                {allSessions.length}
-              </p>
-              <strong>Sample session dates:</strong>
-              {allSessions.slice(0, 3).map((session, i) => (
-                <p key={i}>
-                  {session.date} - {session.status}
-                </p>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {workloads.slice(0, 3).map((trainer, index) => (
