@@ -1,4 +1,3 @@
-import React from "react";
 import { Session, SessionType, Student, Trainer } from "../../types";
 
 type UpcomingListProps = {
