@@ -1,4 +1,3 @@
-import { startOfWeek, endOfWeek } from 'date-fns'
 import { listSessions } from '../services/sessions'
 import { listTrainers } from '../services/trainers'
 

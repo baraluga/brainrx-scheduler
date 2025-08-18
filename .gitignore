@@ -104,3 +104,8 @@ Thumbs.db
 
 # TypeScript
 *.tsbuildinfo
+
+# Firebase
+.firebase/
+*-debug.log
+.runtimeconfig.json
