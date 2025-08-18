@@ -1,8 +1,8 @@
-import { ReactNode } from 'react'
-import Navigation from './Navigation'
+import { ReactNode } from "react";
+import Navigation from "./Navigation";
 
 interface LayoutProps {
-  children: ReactNode
+  children: ReactNode;
 }
 
 function Layout({ children }: LayoutProps) {
@@ -13,7 +13,7 @@ function Layout({ children }: LayoutProps) {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <h1 className="text-xl font-extrabold text-ink-900">
-                BrainRX Scheduler
+                BrainRx Scheduler
               </h1>
             </div>
             <Navigation />
@@ -25,7 +25,7 @@ function Layout({ children }: LayoutProps) {
         {children}
       </main>
     </div>
-  )
+  );
 }
 
-export default Layout
+export default Layout;

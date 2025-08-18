@@ -2,7 +2,7 @@
   "name": "brainrx-scheduler",
   "private": true,
   "version": "1.0.0",
-  "description": "BrainRX Scheduler - A React application for managing brain training programs",
+      "description": "BrainRx Scheduler - A React application for managing brain training programs",
   "type": "module",
   "scripts": {
     "dev": "vite",

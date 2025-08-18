@@ -1,4 +1,4 @@
-# BrainRX Scheduler
+# BrainRx Scheduler
 
 A modern React + TypeScript application for managing students, trainers, and scheduling appointments.
 

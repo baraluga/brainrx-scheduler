@@ -21,7 +21,7 @@ function Dashboard() {
           Dashboard
         </h2>
         <p className="mt-2 text-sm text-gray-600">
-          Welcome to BrainRX Scheduler. Manage your students, trainers, and sessions all in one place.
+          Welcome to BrainRx Scheduler. Manage your students, trainers, and sessions all in one place.
         </p>
       </div>
 
