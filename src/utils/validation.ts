@@ -1,3 +1,6 @@
+import { startOfDay, endOfDay } from 'date-fns'
+import { listEffectiveBlocks } from '../services/blockedDays'
+
 export function isValidTimeIncrement(time: string, incrementMinutes = 15): boolean {
   const [hours, minutes] = time.split(':').map(Number)
   if (isNaN(hours) || isNaN(minutes)) return false
@@ -47,4 +50,16 @@ export function validateTimeSlot(startTime: string, endTime: string): { ok: true
   }
   
   return { ok: true }
+}
+
+export function isTimeslotBlocked(date: string, startTime: string, endTime: string): boolean {
+  const day = new Date(date)
+  const blocks = listEffectiveBlocks({ from: startOfDay(day), to: endOfDay(day) })
+  const [sh, sm] = startTime.split(':').map(Number)
+  const [eh, em] = endTime.split(':').map(Number)
+  const start = new Date(day)
+  start.setHours(sh, sm, 0, 0)
+  const end = new Date(day)
+  end.setHours(eh, em, 0, 0)
+  return blocks.some(b => start < b.end && end > b.start)
 }

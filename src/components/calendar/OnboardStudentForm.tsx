@@ -3,7 +3,7 @@ import { Student, Trainer } from '../../types'
 import { listStudents } from '../../services/students'
 import { listTrainers } from '../../services/trainers'
 import { createSession } from '../../services/sessions'
-import { validateTimeSlot } from '../../utils/validation'
+import { validateTimeSlot, isTimeslotBlocked } from '../../utils/validation'
 
 type TimeSlot = { startTime: string; endTime: string }
 
@@ -128,7 +128,7 @@ export default function OnboardStudentForm({ onCreated, onCancel }: Props) {
         const s = slotsByDay[wd]
         if (s) {
           const validation = validateTimeSlot(s.startTime, s.endTime)
-          if (validation.ok) {
+          if (validation.ok && !isTimeslotBlocked(isoDate, s.startTime, s.endTime)) {
             createSession({
               sessionType: 'training-tabletop',
               assignedSeat: 1, // Default to seat 1 for onboarding

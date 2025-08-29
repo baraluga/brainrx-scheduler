@@ -1,4 +1,5 @@
 import { Session } from '../types/index'
+import { EffectiveBlock } from '../types/blocked'
 import { STORAGE_KEYS } from '../utils/storage'
 import * as crud from '../utils/crud'
 
@@ -32,3 +33,17 @@ export const getAppointment = getSession
 export const createAppointment = createSession
 export const updateAppointment = updateSession
 export const deleteAppointment = deleteSession
+
+export function cancelSessionsOverlapping(block: EffectiveBlock): void {
+  const sessions = listSessions()
+  sessions.forEach((s) => {
+    if (s.status !== 'scheduled') return
+    const start = new Date(s.date)
+    const [eh, em] = s.endTime.split(':').map(Number)
+    const end = new Date(start)
+    end.setHours(eh, em, 0, 0)
+    if (start < block.end && end > block.start) {
+      updateSession(s.id, { status: 'cancelled' })
+    }
+  })
+}

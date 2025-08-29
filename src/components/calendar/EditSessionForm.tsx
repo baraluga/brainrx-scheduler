@@ -4,7 +4,7 @@ import { listTrainers } from "../../services/trainers";
 import { listStudents } from "../../services/students";
 import { listSessions } from "../../services/sessions";
 import { updateSession } from "../../services/sessions";
-import { validateTimeSlot } from "../../utils/validation";
+import { validateTimeSlot, isTimeslotBlocked } from "../../utils/validation";
 import { getAvailableSeats } from "../../utils/seatAvailability";
 
 type Props = {
@@ -244,7 +244,9 @@ export default function EditSessionForm({ initial, onSaved, onCancel, onCancelle
     if (!trainerId || !date || !startTime || !endTime || !assignedSeat)
       return false;
     const v = validateTimeSlot(startTime, endTime);
-    return v.ok && availableSeats.length > 0;
+    if (!v.ok) return false;
+    if (isTimeslotBlocked(date, startTime, endTime)) return false;
+    return availableSeats.length > 0;
   }, [trainerId, date, startTime, endTime, assignedSeat, availableSeats]);
 
   const onChangeStart = (val: string) => {
@@ -348,6 +350,10 @@ export default function EditSessionForm({ initial, onSaved, onCancel, onCancelle
     const v = validateTimeSlot(startTime, endTime);
     if (!v.ok) {
       setError(v.message);
+      return;
+    }
+    if (isTimeslotBlocked(date, startTime, endTime)) {
+      setError('Selected time falls within a blocked period.');
       return;
     }
     try {
