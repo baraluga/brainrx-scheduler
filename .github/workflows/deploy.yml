@@ -1,0 +1,31 @@
+# Deploys to Firebase Hosting.
+# Generate a CI token with `firebase login:ci` and add it as a
+# GitHub secret named `FIREBASE_TOKEN` (Settings → Secrets → Actions).
+name: Deploy
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18 # Align with package.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint and typecheck
+        run: npm run lint && npm run typecheck
+        continue-on-error: true
+      - name: Deploy to Firebase
+        run: npm run deploy
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }} # needs repository secret
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
