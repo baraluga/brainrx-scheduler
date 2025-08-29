@@ -6,6 +6,7 @@ import Trainers from './pages/Trainers'
 import Calendar from './pages/Calendar'
 import PublicDailyView from './pages/PublicDailyView'
 import Insights from './pages/Insights'
+import BlockedDays from './pages/BlockedDays'
 
 function App() {
   const PrivateRoutes = () => (
@@ -16,6 +17,7 @@ function App() {
         <Route path="/trainers" element={<Trainers />} />
         <Route path="/calendar" element={<Calendar />} />
         <Route path="/insights" element={<Insights />} />
+        <Route path="/blocked-days" element={<BlockedDays />} />
       </Routes>
     </Layout>
   )

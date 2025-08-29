@@ -8,6 +8,7 @@ A modern React + TypeScript application for managing students, trainers, and sch
 - **Student Management**: Track student profiles and enrollment
 - **Trainer Management**: Manage trainer profiles and capabilities
 - **Calendar & Scheduling**: View and manage appointment schedules
+- **Blocked Days**: Centralize holiday and recurring closure rules with automatic session cancellation
 
 ## Tech Stack
 

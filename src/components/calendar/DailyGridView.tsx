@@ -1,5 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { Session, SessionType, Student, Trainer } from "../../types/index";
+import { listEffectiveBlocks } from "../../services/blockedDays";
+import { startOfDay, endOfDay } from "date-fns";
 
  type DailyGridConfig = {
    businessStartMinutes: number; // minutes from midnight (e.g., 10:00 → 600)
@@ -112,6 +114,11 @@ export default function DailyGridView({
       (a) => new Date(a.date).toDateString() === dateKey && a.status !== 'cancelled'
     );
   }, [appointments, dateKey]);
+
+  const blockedPeriods = useMemo(
+    () => listEffectiveBlocks({ from: startOfDay(date), to: endOfDay(date) }),
+    [date]
+  );
 
   const getSessionType = (a: any): SessionType => {
     if (a.sessionType) return a.sessionType as SessionType;
@@ -455,6 +462,20 @@ export default function DailyGridView({
       onMouseLeave={handlePanEnd}
       style={{ cursor: isPanning ? 'grabbing' : undefined }}
     >
+      {blockedPeriods.map((b, idx) => {
+        const startM = b.start.getHours() * 60 + b.start.getMinutes();
+        const endM = b.end.getHours() * 60 + b.end.getMinutes();
+        const top = ((startM - businessStartMinutes) / incrementMinutes) * rowHeight;
+        const height = ((endM - startM) / incrementMinutes) * rowHeight;
+        return (
+          <div
+            key={idx}
+            className="absolute z-10 left-[120px] right-0 bg-gray-200/60 cursor-not-allowed"
+            style={{ top, height }}
+            title="Blocked"
+          />
+        );
+      })}
       <div
         className="grid select-none"
         style={{

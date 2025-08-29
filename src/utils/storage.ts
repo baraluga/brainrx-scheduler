@@ -3,7 +3,8 @@ import { generateId as utilGenerateId } from './index'
 export const STORAGE_KEYS = {
   students: 'brx_students',
   trainers: 'brx_trainers',
-  appointments: 'brx_appointments'
+  appointments: 'brx_appointments',
+  blockedDays: 'brx_blocked_days'
 } as const
 
 export function load<T>(key: string): T | null {

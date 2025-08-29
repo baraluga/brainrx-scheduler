@@ -3,7 +3,7 @@ import { Session, SessionType, Student, Trainer } from '../../types/index'
 import { listStudents } from '../../services/students'
 import { listTrainers } from '../../services/trainers'
 import { listSessions } from '../../services/sessions'
-import { validateTimeSlot } from '../../utils/validation'
+import { validateTimeSlot, isTimeslotBlocked } from '../../utils/validation'
 import { getAvailableSeats } from '../../utils/seatAvailability'
 
 interface SessionFormData {
@@ -238,10 +238,12 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
 
   const validateTimeSlotField = () => {
     if (!formData.startTime || !formData.endTime) return undefined
-    
     const validation = validateTimeSlot(formData.startTime, formData.endTime)
     if (!validation.ok) {
       return validation.message
+    }
+    if (formData.date && isTimeslotBlocked(formData.date, formData.startTime, formData.endTime)) {
+      return 'Selected time falls within a blocked period'
     }
     return undefined
   }
@@ -318,7 +320,7 @@ export default function SessionForm({ initial, onSubmit, onCancel, submitLabel =
     setErrors(prev => ({ ...prev, [field]: fieldError }))
     
     // Re-validate time slot when times change
-    if (field === 'startTime' || field === 'endTime') {
+    if (field === 'startTime' || field === 'endTime' || field === 'date') {
       const timeSlotError = validateTimeSlotField()
       setErrors(prev => ({ ...prev, timeSlot: timeSlotError }))
     }

@@ -14,6 +14,7 @@ import Modal from "../components/common/Modal";
 import DailyGridView from "../components/calendar/DailyGridView";
 import { ToastContainer } from "../components/common/Toast";
 import { useToast } from "../hooks/useToast";
+import { isTimeslotBlocked } from "../utils/validation";
 
 function Calendar() {
   const [sessions, setSessions] = useState<Session[]>(listSessions());
@@ -466,6 +467,10 @@ function Calendar() {
               }
             }}
             onMove={(session, newSeat, newStartTime, newEndTime) => {
+              if (isTimeslotBlocked(session.date.split('T')[0], newStartTime, newEndTime)) {
+                showToast("Time slot is blocked", "error");
+                return;
+              }
               try {
                 updateSession(session.id, {
                   assignedSeat: newSeat,

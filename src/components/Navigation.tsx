@@ -6,6 +6,7 @@ const navItems = [
   { path: '/trainers', label: 'Trainers' },
   { path: '/calendar', label: 'Calendar' },
   { path: '/insights', label: 'Insights' },
+  { path: '/blocked-days', label: 'Blocked Days' },
 ]
 
 function Navigation() {
